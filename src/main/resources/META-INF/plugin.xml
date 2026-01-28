@@ -1,15 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.lilulei.ruankao</id>
-    <name>ruankao</name>
+    <name>软考刷题助手</name>
     <vendor>lilulei</vendor>
+    <description>软考备考刷题插件，提供历年真题练习、错题管理、学习统计等功能</description>
+    <change-notes>Initial release of Soft Exam Practice Plugin</change-notes>
 
     <depends>com.intellij.modules.platform</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.lilulei.ruankao.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <toolWindow id="SoftExamPractice"
+                    anchor="right"
+                    icon="/icons/exam.svg"
+                    factoryClass="com.github.lilulei.ruankao.toolWindow.PracticeToolWindowFactory"/>
+        
+        <toolWindow id="WrongQuestions"
+                    anchor="bottom"
+                    secondary="true"
+                    factoryClass="com.github.lilulei.ruankao.toolWindow.WrongQuestionsToolWindowFactory"/>
+        
         <postStartupActivity implementation="com.github.lilulei.ruankao.startup.MyProjectActivity" />
     </extensions>
 </idea-plugin>

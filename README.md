@@ -18,11 +18,32 @@
 - [ ] Configure the [CODECOV_TOKEN](https://docs.codecov.com/docs/quick-start) secret for automated test coverage reports on PRs
 
 <!-- Plugin description -->
-This Fancy IntelliJ Platform Plugin is going to be your implementation of the brilliant ideas that you have.
+<h1>软考刷题助手</h1>
 
-This specific section is a source for the [plugin.xml](/src/main/resources/META-INF/plugin.xml) file which will be extracted by the [Gradle](/build.gradle.kts) during the build process.
+<p>这是一个专为准备软件水平考试（软考）的开发者设计的IntelliJ IDEA插件。它提供了丰富的刷题练习功能，帮助您在日常开发工作中随时进行软考备考。</p>
 
-To keep everything working, do not remove `<!-- ... -->` sections. 
+<h2>主要功能</h2>
+<ul>
+<li><strong>试题管理</strong>: 内置软考历年真题，支持按科目、知识点分类浏览</li>
+<li><strong>刷题练习</strong>: 提供每日一练、专项练习、模拟考试、随机练习等多种模式</li>
+<li><strong>错题本</strong>: 自动记录错题，支持智能复习策略</li>
+<li><strong>学习统计</strong>: 提供详细的学习数据统计和可视化图表</li>
+<li><strong>成就系统</strong>: 设置学习里程碑和成就徽章，激励持续学习</li>
+</ul>
+
+<h2>使用方法</h2>
+<ol>
+<li>安装插件后重启IDE</li>
+<li>通过右侧的"SoftExamPractice"工具窗口开始刷题练习</li>
+<li>可通过底部的"WrongQuestions"工具窗口查看错题本</li>
+<li>选择不同的练习模式进行备考</li>
+</ol>
+
+<h2>快捷键</h2>
+<ul>
+<li><code>Ctrl+Alt+P</code>: 快速开始练习</li>
+</ul>
+
 <!-- Plugin description end -->
 
 ## Installation

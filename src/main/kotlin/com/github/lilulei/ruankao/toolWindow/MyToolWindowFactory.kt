@@ -16,7 +16,7 @@ import javax.swing.JButton
 class MyToolWindowFactory : ToolWindowFactory {
 
     init {
-        thisLogger().warn("Don't forget to remove all non-needed sample code files with their corresponding registration entries in `plugin.xml`.")
+        thisLogger().info("软考刷题工具窗口初始化")
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
@@ -25,7 +25,7 @@ class MyToolWindowFactory : ToolWindowFactory {
         toolWindow.contentManager.addContent(content)
     }
 
-    override fun shouldBeAvailable(project: Project) = true
+    override fun shouldBeAvailable(project: Project) = false // 不再显示旧窗口
 
     class MyToolWindow(toolWindow: ToolWindow) {
 
