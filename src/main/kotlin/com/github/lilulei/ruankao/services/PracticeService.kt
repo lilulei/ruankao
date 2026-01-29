@@ -10,19 +10,30 @@ import com.intellij.openapi.diagnostic.logger
 import org.jdom.Element
 import java.util.*
 
+/**
+ * 练习服务类，用于管理练习会话的创建、保存、加载和统计
+ * 实现了PersistentStateComponent接口以支持数据持久化
+ */
 @State(name = "PracticeService", storages = [Storage("softexam_practices.xml")])
 @Service(Service.Level.PROJECT)
 class PracticeService : PersistentStateComponent<Element> {
     private val logger = logger<PracticeService>()
     private val _practiceSessions = mutableListOf<PracticeSession>()
     private var currentSession: PracticeSession? = null
-    
+
+    /**
+     * 获取所有练习会话的只读列表
+     */
     val allPracticeSessions: List<PracticeSession>
         get() = _practiceSessions.toList()
 
+    /**
+     * 获取当前状态元素，用于持久化练习会话数据
+     * @return 包含所有练习会话信息的XML元素
+     */
     override fun getState(): Element {
         val element = Element("PracticeService")
-        
+
         _practiceSessions.forEach { session ->
             val sessionElement = Element("session")
             sessionElement.setAttribute("sessionId", session.sessionId)
@@ -31,7 +42,7 @@ class PracticeService : PersistentStateComponent<Element> {
                 sessionElement.setAttribute("endTime", session.endTime.toString())
             }
             sessionElement.setAttribute("sessionType", session.sessionType.name)
-            
+
             // 添加问题
             val questionsElement = Element("questions")
             session.questions.forEach { question ->
@@ -40,7 +51,7 @@ class PracticeService : PersistentStateComponent<Element> {
                 questionsElement.addContent(questionElement)
             }
             sessionElement.addContent(questionsElement)
-            
+
             // 添加答案记录
             val answersElement = Element("answers")
             session.answers.forEach { (questionId, answerRecord) ->
@@ -48,7 +59,7 @@ class PracticeService : PersistentStateComponent<Element> {
                 answerElement.setAttribute("questionId", questionId)
                 answerElement.setAttribute("isCorrect", answerRecord.isCorrect.toString())
                 answerElement.setAttribute("answeredAt", answerRecord.answeredAt.toString())
-                
+
                 val selectedOptionsElement = Element("selectedOptions")
                 answerRecord.selectedOptions.forEach { option ->
                     val optionElement = Element("option")
@@ -56,27 +67,31 @@ class PracticeService : PersistentStateComponent<Element> {
                     selectedOptionsElement.addContent(optionElement)
                 }
                 answerElement.addContent(selectedOptionsElement)
-                
+
                 answersElement.addContent(answerElement)
             }
             sessionElement.addContent(answersElement)
-            
+
             element.addContent(sessionElement)
         }
-        
+
         return element
     }
 
+    /**
+     * 加载状态元素中的练习会话数据
+     * @param state 包含练习会话信息的XML元素
+     */
     override fun loadState(state: Element) {
         try {
             _practiceSessions.clear()
-            
+
             state.getChildren("session").forEach { sessionElement ->
                 val sessionId = sessionElement.getAttributeValue("sessionId")
                 val startTime = sessionElement.getAttributeValue("startTime")?.toLongOrNull() ?: System.currentTimeMillis()
                 val endTime = sessionElement.getAttributeValue("endTime")?.toLongOrNull()
                 val sessionType = enumValueOf<PracticeType>(sessionElement.getAttributeValue("sessionType"))
-                
+
                 val questions = mutableListOf<Question>()
                 val questionsElement = sessionElement.getChild("questions")
                 questionsElement?.getChildren("question")?.forEach { questionElement ->
@@ -90,20 +105,20 @@ class PracticeService : PersistentStateComponent<Element> {
                         }
                     }
                 }
-                
+
                 val answers = mutableMapOf<String, AnswerRecord>()
                 val answersElement = sessionElement.getChild("answers")
                 answersElement?.getChildren("answer")?.forEach { answerElement ->
                     val questionId = answerElement.getAttributeValue("questionId")
                     val isCorrect = answerElement.getAttributeValue("isCorrect")?.toBooleanStrictOrNull() ?: false
                     val answeredAt = answerElement.getAttributeValue("answeredAt")?.toLongOrNull() ?: System.currentTimeMillis()
-                    
+
                     val selectedOptions = mutableSetOf<String>()
                     val selectedOptionsElement = answerElement.getChild("selectedOptions")
                     selectedOptionsElement?.getChildren("option")?.forEach { optionElement ->
                         selectedOptions.add(optionElement.text)
                     }
-                    
+
                     answers[questionId] = AnswerRecord(
                         questionId = questionId,
                         selectedOptions = selectedOptions.toSet(),
@@ -111,7 +126,7 @@ class PracticeService : PersistentStateComponent<Element> {
                         answeredAt = answeredAt
                     )
                 }
-                
+
                 val session = PracticeSession(
                     sessionId = sessionId,
                     startTime = startTime,
@@ -120,7 +135,7 @@ class PracticeService : PersistentStateComponent<Element> {
                     answers = answers,
                     sessionType = sessionType
                 )
-                
+
                 _practiceSessions.add(session)
             }
         } catch (e: Exception) {
@@ -128,6 +143,12 @@ class PracticeService : PersistentStateComponent<Element> {
         }
     }
 
+    /**
+     * 开始一个新的练习会话
+     * @param sessionType 练习类型（如模拟考试、专项练习等）
+     * @param questions 要练习的问题列表
+     * @return 新创建的练习会话对象
+     */
     fun startNewSession(sessionType: PracticeType, questions: List<Question>): PracticeSession {
         currentSession = PracticeSession(
             sessionType = sessionType,
@@ -136,25 +157,39 @@ class PracticeService : PersistentStateComponent<Element> {
         return currentSession!!
     }
 
+    /**
+     * 获取当前正在进行的练习会话
+     * @return 当前练习会话对象，如果没有则返回null
+     */
     fun getCurrentSession(): PracticeSession? {
         return currentSession
     }
 
+    /**
+     * 提交问题答案并更新会话状态
+     * @param questionId 问题ID
+     * @param selectedOptions 用户选择的选项集合
+     * @param isCorrect 答案是否正确
+     */
     fun submitAnswer(questionId: String, selectedOptions: Set<String>, isCorrect: Boolean) {
         val session = currentSession ?: return
-        
+
         session.answers[questionId] = AnswerRecord(
             questionId = questionId,
             selectedOptions = selectedOptions,
             isCorrect = isCorrect
         )
-        
+
         // 如果题目全部回答完毕，结束会话
         if (session.answers.size == session.questions.size) {
             endCurrentSession()
         }
     }
-    
+
+    /**
+     * 记录错误答案到错题本服务
+     * @param questionId 问题ID
+     */
     fun updateWrongAnswer(questionId: String) {
         val project = com.intellij.openapi.project.ProjectManager.getInstance().openProjects.firstOrNull()
         if (project != null) {
@@ -162,7 +197,11 @@ class PracticeService : PersistentStateComponent<Element> {
             wrongQuestionService.recordWrongAnswer(questionId)
         }
     }
-    
+
+    /**
+     * 记录正确答案到错题本服务
+     * @param questionId 问题ID
+     */
     fun updateCorrectAnswer(questionId: String) {
         val project = com.intellij.openapi.project.ProjectManager.getInstance().openProjects.firstOrNull()
         if (project != null) {
@@ -171,28 +210,35 @@ class PracticeService : PersistentStateComponent<Element> {
         }
     }
 
+    /**
+     * 结束当前练习会话并保存结果
+     */
     fun endCurrentSession() {
         val session = currentSession ?: return
         val endedSession = session.copy(endTime = System.currentTimeMillis())
         _practiceSessions.add(endedSession)
         currentSession = null
-        
+
         // 记录到学习统计
         val project = com.intellij.openapi.project.ProjectManager.getInstance().openProjects.firstOrNull()
         if (project != null) {
             val statsService = project.getService(LearningStatisticsService::class.java)
             statsService.recordPracticeSession(endedSession)
         }
-        
+
         // 更新错题本
         updateWrongQuestions(endedSession)
     }
 
+    /**
+     * 根据练习会话结果更新错题本
+     * @param session 练习会话对象
+     */
     private fun updateWrongQuestions(session: PracticeSession) {
         val project = com.intellij.openapi.project.ProjectManager.getInstance().openProjects.firstOrNull()
         if (project != null) {
             val wrongQuestionService = project.getService(WrongQuestionService::class.java)
-            
+
             session.answers.forEach { (questionId, answerRecord) ->
                 if (answerRecord.isCorrect) {
                     wrongQuestionService.recordCorrectAnswer(questionId)
@@ -203,10 +249,19 @@ class PracticeService : PersistentStateComponent<Element> {
         }
     }
 
+    /**
+     * 获取练习历史记录
+     * @return 所有已完成的练习会话列表
+     */
     fun getPracticeHistory(): List<PracticeSession> {
         return _practiceSessions.toList()
     }
 
+    /**
+     * 根据会话ID获取特定的练习会话
+     * @param sessionId 会话ID
+     * @return 对应的练习会话对象，如果不存在则返回null
+     */
     fun getSessionById(sessionId: String): PracticeSession? {
         return _practiceSessions.find { it.sessionId == sessionId }
     }

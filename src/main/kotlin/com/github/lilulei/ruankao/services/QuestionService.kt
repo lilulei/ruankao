@@ -14,13 +14,23 @@ import java.io.StringReader
 import java.util.*
 import kotlin.random.Random
 
+/**
+ * 题目服务类，负责管理考试题目（包括默认题目和自定义题目）
+ * 实现了持久化存储功能，将自定义题目保存到配置文件中
+ *
+ * @param name 状态组件名称为"QuestionService"
+ * @param storages 存储位置为"softexam_questions.xml"
+ */
 @State(name = "QuestionService", storages = [Storage("softexam_questions.xml")])
 @Service(Service.Level.PROJECT)
 class QuestionService : PersistentStateComponent<Element> {
     private val logger = logger<QuestionService>()
-    private val _questions = mutableListOf<Question>()
-    private val _customQuestions = mutableListOf<Question>()
-    
+    private val _questions = mutableListOf<Question>()      // 默认题目列表
+    private val _customQuestions = mutableListOf<Question>() // 自定义题目列表
+
+    /**
+     * 获取所有题目（默认题目和自定义题目的合并结果，按ID去重）
+     */
     val allQuestions: List<Question>
         get() = (_questions + _customQuestions).distinctBy { it.id }
 
@@ -28,10 +38,15 @@ class QuestionService : PersistentStateComponent<Element> {
         loadDefaultQuestions()
     }
 
+    /**
+     * 获取当前状态的XML元素表示，用于持久化存储自定义题目
+     *
+     * @return 包含所有自定义题目的XML元素
+     */
     override fun getState(): Element {
         val element = Element("QuestionService")
         val customQuestionsElement = Element("customQuestions")
-        
+
         _customQuestions.forEach { question ->
             val questionElement = Element("question")
             questionElement.setAttribute("id", question.id)
@@ -41,7 +56,7 @@ class QuestionService : PersistentStateComponent<Element> {
             questionElement.setAttribute("category", question.category)
             questionElement.setAttribute("year", question.year.toString())
             questionElement.setAttribute("examType", question.examType.name)
-            
+
             // 添加选项
             val optionsElement = Element("options")
             question.options.forEach { (key, value) ->
@@ -51,7 +66,7 @@ class QuestionService : PersistentStateComponent<Element> {
                 optionsElement.addContent(optionElement)
             }
             questionElement.addContent(optionsElement)
-            
+
             // 添加答案
             val answersElement = Element("answers")
             question.correctAnswers.forEach { answer ->
@@ -60,20 +75,25 @@ class QuestionService : PersistentStateComponent<Element> {
                 answersElement.addContent(answerElement)
             }
             questionElement.addContent(answersElement)
-            
+
             customQuestionsElement.addContent(questionElement)
         }
-        
+
         element.addContent(customQuestionsElement)
         return element
     }
 
+    /**
+     * 加载持久化状态，从XML元素中恢复自定义题目数据
+     *
+     * @param state 要加载的状态XML元素
+     */
     override fun loadState(state: Element) {
         try {
             val customQuestionsElement = state.getChild("customQuestions")
             if (customQuestionsElement != null) {
                 _customQuestions.clear()
-                
+
                 customQuestionsElement.getChildren("question").forEach { questionElement ->
                     val id = questionElement.getAttributeValue("id")
                     val title = questionElement.getAttributeValue("title")
@@ -84,7 +104,7 @@ class QuestionService : PersistentStateComponent<Element> {
                     val category = questionElement.getAttributeValue("category")
                     val year = questionElement.getAttributeValue("year")?.toIntOrNull() ?: 0
                     val examType = enumValueOf<ExamType>(questionElement.getAttributeValue("examType"))
-                    
+
                     val options = mutableMapOf<String, String>()
                     val optionsElement = questionElement.getChild("options")
                     optionsElement?.getChildren("option")?.forEach { optionElement ->
@@ -92,13 +112,13 @@ class QuestionService : PersistentStateComponent<Element> {
                         val value = optionElement.text
                         options[key] = value
                     }
-                    
+
                     val correctAnswers = mutableSetOf<String>()
                     val answersElement = questionElement.getChild("answers")
                     answersElement?.getChildren("answer")?.forEach { answerElement ->
                         correctAnswers.add(answerElement.text)
                     }
-                    
+
                     val question = Question(
                         id = id,
                         title = title,
@@ -110,7 +130,7 @@ class QuestionService : PersistentStateComponent<Element> {
                         year = year,
                         examType = examType
                     )
-                    
+
                     _customQuestions.add(question)
                 }
             }
@@ -119,6 +139,10 @@ class QuestionService : PersistentStateComponent<Element> {
         }
     }
 
+    /**
+     * 加载默认题目到题库中
+     * 初始化时会加载一些示例题目作为默认题库
+     */
     private fun loadDefaultQuestions() {
         // 这里加载一些示例题目作为默认题库
         val sampleQuestions = listOf(
@@ -171,37 +195,72 @@ class QuestionService : PersistentStateComponent<Element> {
                 examType = ExamType.DATABASE_ENGINEER
             )
         )
-        
+
         _questions.addAll(sampleQuestions)
     }
 
+    /**
+     * 添加自定义题目到题库中
+     *
+     * @param question 要添加的题目对象
+     */
     fun addCustomQuestion(question: Question) {
         _customQuestions.add(question)
     }
 
+    /**
+     * 根据题目ID删除自定义题目
+     *
+     * @param id 要删除的题目ID
+     */
     fun removeCustomQuestion(id: String) {
         _customQuestions.removeIf { it.id == id }
     }
 
+    /**
+     * 根据分类获取题目列表
+     *
+     * @param category 题目分类
+     * @return 符合指定分类的题目列表
+     */
     fun getQuestionsByCategory(category: String): List<Question> {
         return allQuestions.filter { it.category == category }
     }
 
+    /**
+     * 根据考试类型获取题目列表
+     *
+     * @param examType 考试类型枚举
+     * @return 符合指定考试类型的题目列表
+     */
     fun getQuestionsByExamType(examType: ExamType): List<Question> {
         return allQuestions.filter { it.examType == examType }
     }
 
+    /**
+     * 根据难度级别获取题目列表
+     *
+     * @param level 难度级别枚举
+     * @return 符合指定难度级别的题目列表
+     */
     fun getQuestionsByDifficulty(level: com.github.lilulei.ruankao.model.DifficultyLevel): List<Question> {
         return allQuestions.filter { it.level == level }
     }
 
+    /**
+     * 获取随机题目列表
+     *
+     * @param count 需要获取的题目数量
+     * @param examType 可选的考试类型过滤条件，默认为null表示不过滤
+     * @return 随机选择的题目列表
+     */
     fun getRandomQuestions(count: Int, examType: ExamType? = null): List<Question> {
         val filteredQuestions = if (examType != null) {
             allQuestions.filter { it.examType == examType }
         } else {
             allQuestions
         }
-        
+
         return if (filteredQuestions.size <= count) {
             filteredQuestions.shuffled()
         } else {
@@ -209,6 +268,12 @@ class QuestionService : PersistentStateComponent<Element> {
         }
     }
 
+    /**
+     * 根据题目ID获取单个题目
+     *
+     * @param id 要查找的题目ID
+     * @return 找到的题目对象，如果未找到则返回null
+     */
     fun getQuestionById(id: String): Question? {
         return allQuestions.find { it.id == id }
     }
