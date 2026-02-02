@@ -23,5 +23,52 @@
                     factoryClass="com.github.lilulei.ruankao.toolWindow.WrongQuestionsToolWindowFactory"/>
         
         <postStartupActivity implementation="com.github.lilulei.ruankao.startup.MyProjectActivity" />
+        
+        <!-- 注册新的服务 -->
+        <service serviceInterface="com.github.lilulei.ruankao.services.KnowledgeChapterService" 
+                 serviceImplementation="com.github.lilulei.ruankao.services.KnowledgeChapterService" 
+                 serviceLevel="PROJECT"/>
     </extensions>
+    
+    <actions>
+        <action id="OpenSoftExamPracticeToolWindow"
+                class="com.github.lilulei.ruankao.actions.OpenPracticeWindowAction"
+                text="Open Soft Exam Practice"
+                description="Open Soft Exam Practice Tool Window">
+            <add-to-group group-id="ToolsMenu" relative-to-action="Generate" anchor="after"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt Q"/>
+        </action>
+        
+        <action id="OpenWrongQuestionsToolWindow"
+                class="com.github.lilulei.ruankao.actions.OpenWrongQuestionsWindowAction"
+                text="Open Wrong Questions"
+                description="Open Wrong Questions Tool Window">
+            <add-to-group group-id="ToolsMenu" relative-to-action="Generate" anchor="after"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt W"/>
+        </action>
+        
+        <action id="ManageQuestionsAction"
+                class="com.github.lilulei.ruankao.actions.ManageQuestionsAction"
+                text="Manage Questions"
+                description="Add or import questions for Soft Exam Plugin">
+            <add-to-group group-id="ToolsMenu" relative-to-action="Generate" anchor="after"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
+        </action>
+        
+        <action id="ExportAction"
+                class="com.github.lilulei.ruankao.actions.ExportAction"
+                text="Export Data"
+                description="Export practice records, wrong questions and learning statistics">
+            <add-to-group group-id="ToolsMenu" relative-to-action="Generate" anchor="after"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt R"/>
+        </action>
+        
+        <action id="ChangeIdentityAction"
+                class="com.github.lilulei.ruankao.actions.ChangeIdentityAction"
+                text="Change Exam Identity"
+                description="Change your exam level and type">
+            <add-to-group group-id="ToolsMenu" relative-to-action="Generate" anchor="after"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt A"/>
+        </action>
+    </actions>
 </idea-plugin>

@@ -1,61 +1,313 @@
 package com.github.lilulei.ruankao.services
 
-import com.github.lilulei.ruankao.model.Question
-import com.github.lilulei.ruankao.model.ExamType
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.project.Project
+import com.github.lilulei.ruankao.model.*
 import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.util.JDOMUtil
 import org.jdom.Element
-import java.io.StringReader
 import java.util.*
-import kotlin.random.Random
 
 /**
- * 题目服务类，负责管理考试题目（包括默认题目和自定义题目）
- * 实现了持久化存储功能，将自定义题目保存到配置文件中
- *
- * @param name 状态组件名称为"QuestionService"
- * @param storages 存储位置为"softexam_questions.xml"
+ * 试题服务类，负责管理软考试题
+ * 实现PersistentStateComponent接口以支持状态持久化
+ * @param State 注解指定状态名称和存储文件
+ * @param Service 注解指定服务级别为项目级别
  */
 @State(name = "QuestionService", storages = [Storage("softexam_questions.xml")])
 @Service(Service.Level.PROJECT)
 class QuestionService : PersistentStateComponent<Element> {
     private val logger = logger<QuestionService>()
-    private val _questions = mutableListOf<Question>()      // 默认题目列表
-    private val _customQuestions = mutableListOf<Question>() // 自定义题目列表
+    private val _questions = mutableMapOf<String, Question>()
 
     /**
-     * 获取所有题目（默认题目和自定义题目的合并结果，按ID去重）
+     * 获取所有试题的只读映射
      */
-    val allQuestions: List<Question>
-        get() = (_questions + _customQuestions).distinctBy { it.id }
+    val allQuestions: Map<String, Question>
+        get() = _questions.toMap()
 
-    init {
-        loadDefaultQuestions()
+    /**
+     * 获取所有试题列表
+     */
+    val allQuestionsList: List<Question>
+        get() = _questions.values.toList()
+
+    /**
+     * 获取指定ID的试题
+     * @param id 试题ID
+     * @return 试题对象，如果不存在则返回null
+     */
+    fun getQuestionById(id: String): Question? {
+        return _questions[id]
     }
 
     /**
-     * 获取当前状态的XML元素表示，用于持久化存储自定义题目
-     *
-     * @return 包含所有自定义题目的XML元素
+     * 根据分类获取试题
+     * @param category 试题分类
+     * @return 该分类下的所有试题列表
+     */
+    fun getQuestionsByCategory(category: String): List<Question> {
+        return _questions.values.filter { it.category.equals(category, ignoreCase = true) }
+    }
+
+    /**
+     * 根据难度获取试题
+     * @param difficulty 难度等级
+     * @return 该难度下的所有试题列表
+     */
+    fun getQuestionsByDifficulty(difficulty: DifficultyLevel): List<Question> {
+        return _questions.values.filter { it.level == difficulty }
+    }
+
+    /**
+     * 根据考试类型获取试题
+     * @param examType 考试类型
+     * @return 该考试类型下的所有试题列表
+     */
+    fun getQuestionsByExamType(examType: ExamType): List<Question> {
+        return _questions.values.filter { it.examType == examType }
+    }
+
+    /**
+     * 获取随机试题
+     * @param count 需要获取的试题数量
+     * @return 随机选取的试题列表
+     */
+    fun getRandomQuestions(count: Int): List<Question> {
+        val questions = _questions.values.toList()
+        return if (questions.size <= count) {
+            questions.shuffled()
+        } else {
+            questions.shuffled().take(count)
+        }
+    }
+
+    /**
+     * 获取指定分类的随机试题
+     * @param category 试题分类
+     * @param count 需要获取的试题数量
+     * @return 指定分类中随机选取的试题列表
+     */
+    fun getRandomQuestionsByCategory(category: String, count: Int): List<Question> {
+        val questions = getQuestionsByCategory(category)
+        return if (questions.size <= count) {
+            questions.shuffled()
+        } else {
+            questions.shuffled().take(count)
+        }
+    }
+
+    /**
+     * 获取指定难度的随机试题
+     * @param difficulty 难度等级
+     * @param count 需要获取的试题数量
+     * @return 指定难度中随机选取的试题列表
+     */
+    fun getRandomQuestionsByDifficulty(difficulty: DifficultyLevel, count: Int): List<Question> {
+        val questions = getQuestionsByDifficulty(difficulty)
+        return if (questions.size <= count) {
+            questions.shuffled()
+        } else {
+            questions.shuffled().take(count)
+        }
+    }
+
+    /**
+     * 添加试题
+     * @param question 要添加的试题对象
+     */
+    fun addQuestion(question: Question) {
+        _questions[question.id] = question
+        logger.info("添加试题: ${question.id}")
+    }
+
+    /**
+     * 删除试题
+     * @param id 要删除的试题ID
+     */
+    fun removeQuestion(id: String) {
+        val removed = _questions.remove(id)
+        if (removed != null) {
+            logger.info("删除试题: $id")
+        }
+    }
+
+    /**
+     * 更新试题
+     * @param question 更新后的试题对象
+     */
+    fun updateQuestion(question: Question) {
+        _questions[question.id] = question
+        logger.info("更新试题: ${question.id}")
+    }
+
+    /**
+     * 检查试题是否存在
+     * @param id 试题ID
+     * @return 如果试题存在返回true，否则返回false
+     */
+    fun questionExists(id: String): Boolean {
+        return _questions.containsKey(id)
+    }
+
+    /**
+     * 刷新试题列表（从持久化存储重新加载）
+     */
+    fun refreshQuestions() {
+        logger.info("刷新试题列表，当前试题数量: ${_questions.size}")
+    }
+
+    /**
+     * 获取所有分类列表
+     * @return 所有试题分类的去重列表
+     */
+    fun getAllCategories(): List<String> {
+        return _questions.values.map { it.category }.distinct()
+    }
+
+    /**
+     * 获取所有难度等级列表
+     * @return 所有试题难度等级的去重列表
+     */
+    fun getAllDifficultyLevels(): List<DifficultyLevel> {
+        return _questions.values.map { it.level }.distinct()
+    }
+
+    /**
+     * 获取所有考试类型列表
+     * @return 所有考试类型的去重列表
+     */
+    fun getAllExamTypes(): List<ExamType> {
+        return _questions.values.map { it.examType }.distinct()
+    }
+
+    /**
+     * 根据考试级别获取试题
+     * @param level 考试级别（"软考高级", "软考中级", "软考初级"）
+     * @return 该级别的所有试题列表
+     */
+    fun getQuestionsByLevel(level: String): List<Question> {
+        val examTypesInLevel = when (level) {
+            "软考高级" -> listOf(
+                ExamType.SYSTEM_ANALYST,
+                ExamType.SYSTEM_ARCHITECT,
+                ExamType.NETWORK_PLANNER,
+                ExamType.PROJECT_MANAGER,
+                ExamType.SYSTEM_PLANNING_MANAGER
+            )
+            "软考中级" -> listOf(
+                ExamType.SYSTEM_INTEGRATION_ENGINEER,
+                ExamType.NETWORK_ENGINEER,
+                ExamType.INFORMATION_SYSTEM_MANAGEMENT_ENGINEER,
+                ExamType.SOFTWARE_TESTER,
+                ExamType.DATABASE_ENGINEER,
+                ExamType.MULTIMEDIA_DESIGNER,
+                ExamType.SOFTWARE_DESIGNER,
+                ExamType.INFORMATION_SYSTEM_SUPERVISOR,
+                ExamType.E_COMMERCE_DESIGNER,
+                ExamType.INFORMATION_SECURITY_ENGINEER,
+                ExamType.EMBEDDED_SYSTEM_DESIGNER,
+                ExamType.SOFTWARE_PROCESS_EVALUATOR,
+                ExamType.COMPUTER_AIDED_DESIGNER,
+                ExamType.COMPUTER_HARDWARE_ENGINEER,
+                ExamType.INFORMATION_TECHNOLOGY_SUPPORT_ENGINEER
+            )
+            "软考初级" -> listOf(
+                ExamType.PROGRAMMER,
+                ExamType.NETWORK_ADMINISTRATOR,
+                ExamType.INFORMATION_PROCESSING_TECHNICIAN,
+                ExamType.INFORMATION_SYSTEM_OPERATION_MANAGER,
+                ExamType.MULTIMEDIA_APPLICATION_DESIGNER,
+                ExamType.E_COMMERCE_TECHNICIAN,
+                ExamType.WEB_DESIGNER
+            )
+            else -> emptyList() // 未知级别返回空列表
+        }
+        
+        return _questions.values.filter { it.examType in examTypesInLevel }
+    }
+
+    /**
+     * 获取试题总数
+     * @return 试题总数
+     */
+    fun getTotalQuestionCount(): Int {
+        return _questions.size
+    }
+
+    /**
+     * 获取指定分类的试题数量
+     * @param category 试题分类
+     * @return 该分类下的试题数量
+     */
+    fun getQuestionCountByCategory(category: String): Int {
+        return getQuestionsByCategory(category).size
+    }
+
+    /**
+     * 获取指定难度的试题数量
+     * @param difficulty 难度等级
+     * @return 该难度下的试题数量
+     */
+    fun getQuestionCountByDifficulty(difficulty: DifficultyLevel): Int {
+        return getQuestionsByDifficulty(difficulty).size
+    }
+
+    /**
+     * 获取指定考试类型的试题数量
+     * @param examType 考试类型
+     * @return 该考试类型的试题数量
+     */
+    fun getQuestionCountByExamType(examType: ExamType): Int {
+        return getQuestionsByExamType(examType).size
+    }
+
+    /**
+     * 根据章节获取试题
+     * @param chapter 章节名称
+     * @return 该章节下的所有试题列表
+     */
+    fun getQuestionsByChapter(chapter: String): List<Question> {
+        return _questions.values.filter { it.chapter != null && it.chapter.equals(chapter, ignoreCase = true) }
+    }
+
+    /**
+     * 获取所有章节列表
+     * @return 所有试题章节的去重列表
+     */
+    fun getAllChapters(): List<String> {
+        return _questions.values.mapNotNull { it.chapter }.distinct()
+    }
+
+    /**
+     * 根据级别和章节获取试题
+     * @param level 考试级别（如"软考高级"）
+     * @param chapter 章节名称
+     * @return 该级别和章节下的所有试题列表
+     */
+    fun getQuestionsByLevelAndChapter(level: String, chapter: String): List<Question> {
+        val questionsByLevel = getQuestionsByLevel(level)
+        return questionsByLevel.filter { it.chapter != null && it.chapter.equals(chapter, ignoreCase = true) }
+    }
+
+    /**
+     * 获取当前状态元素，用于持久化保存
+     * @return 包含所有试题信息的XML元素
      */
     override fun getState(): Element {
         val element = Element("QuestionService")
-        val customQuestionsElement = Element("customQuestions")
 
-        _customQuestions.forEach { question ->
+        _questions.forEach { (_, question) ->
             val questionElement = Element("question")
             questionElement.setAttribute("id", question.id)
             questionElement.setAttribute("title", question.title)
-            questionElement.setAttribute("explanation", question.explanation)
-            questionElement.setAttribute("level", question.level.name)
             questionElement.setAttribute("category", question.category)
-            questionElement.setAttribute("year", question.year.toString())
-            questionElement.setAttribute("examType", question.examType.name)
+            questionElement.setAttribute("difficulty", question.level.displayName)
+            questionElement.setAttribute("examType", question.examType.displayName)
+            if (question.chapter != null) {
+                questionElement.setAttribute("chapter", question.chapter)
+            }
 
             // 添加选项
             val optionsElement = Element("options")
@@ -67,8 +319,8 @@ class QuestionService : PersistentStateComponent<Element> {
             }
             questionElement.addContent(optionsElement)
 
-            // 添加答案
-            val answersElement = Element("answers")
+            // 添加正确答案
+            val answersElement = Element("correctAnswers")
             question.correctAnswers.forEach { answer ->
                 val answerElement = Element("answer")
                 answerElement.text = answer
@@ -76,205 +328,88 @@ class QuestionService : PersistentStateComponent<Element> {
             }
             questionElement.addContent(answersElement)
 
-            customQuestionsElement.addContent(questionElement)
+            // 添加解析
+            val explanationElement = Element("explanation")
+            explanationElement.text = question.explanation
+            questionElement.addContent(explanationElement)
+
+            element.addContent(questionElement)
         }
 
-        element.addContent(customQuestionsElement)
         return element
     }
 
     /**
-     * 加载持久化状态，从XML元素中恢复自定义题目数据
-     *
+     * 从XML元素加载状态数据
      * @param state 要加载的状态XML元素
      */
     override fun loadState(state: Element) {
         try {
-            val customQuestionsElement = state.getChild("customQuestions")
-            if (customQuestionsElement != null) {
-                _customQuestions.clear()
+            _questions.clear()
 
-                customQuestionsElement.getChildren("question").forEach { questionElement ->
-                    val id = questionElement.getAttributeValue("id")
-                    val title = questionElement.getAttributeValue("title")
-                    val explanation = questionElement.getAttributeValue("explanation")
-                    val level = enumValueOf<com.github.lilulei.ruankao.model.DifficultyLevel>(
-                        questionElement.getAttributeValue("level")
-                    )
-                    val category = questionElement.getAttributeValue("category")
-                    val year = questionElement.getAttributeValue("year")?.toIntOrNull() ?: 0
-                    val examType = enumValueOf<ExamType>(questionElement.getAttributeValue("examType"))
+            state.getChildren("question").forEach { questionElement ->
+                val id = questionElement.getAttributeValue("id")
+                val title = questionElement.getAttributeValue("title") ?: ""
+                val category = questionElement.getAttributeValue("category") ?: "默认分类"
+                val difficultyName = questionElement.getAttributeValue("difficulty") ?: "中等"
+                val examTypeName = questionElement.getAttributeValue("examType") ?: "SOFTWARE_DESIGNER"
 
-                    val options = mutableMapOf<String, String>()
-                    val optionsElement = questionElement.getChild("options")
-                    optionsElement?.getChildren("option")?.forEach { optionElement ->
-                        val key = optionElement.getAttributeValue("key")
-                        val value = optionElement.text
+                val difficulty = try {
+                    // 尝试匹配中文显示名称
+                    DifficultyLevel.values().find { it.displayName == difficultyName } ?: 
+                    // 如果没找到，尝试匹配枚举名称
+                    DifficultyLevel.valueOf(difficultyName.uppercase())
+                } catch (e: IllegalArgumentException) {
+                    DifficultyLevel.MEDIUM
+                }
+
+                val examType = try {
+                    // 尝试匹配中文显示名称
+                    ExamType.values().find { it.displayName == examTypeName } ?: 
+                    // 如果没找到，尝试匹配枚举名称
+                    ExamType.valueOf(examTypeName)
+                } catch (e: IllegalArgumentException) {
+                    ExamType.SOFTWARE_DESIGNER
+                }
+
+                // 解析选项
+                val options = mutableMapOf<String, String>()
+                val optionsElement = questionElement.getChild("options")
+                optionsElement?.getChildren("option")?.forEach { optionElement ->
+                    val key = optionElement.getAttributeValue("key")
+                    val value = optionElement.text
+                    if (key != null) {
                         options[key] = value
                     }
-
-                    val correctAnswers = mutableSetOf<String>()
-                    val answersElement = questionElement.getChild("answers")
-                    answersElement?.getChildren("answer")?.forEach { answerElement ->
-                        correctAnswers.add(answerElement.text)
-                    }
-
-                    val question = Question(
-                        id = id,
-                        title = title,
-                        options = options,
-                        correctAnswers = correctAnswers,
-                        explanation = explanation,
-                        level = level,
-                        category = category,
-                        year = year,
-                        examType = examType
-                    )
-
-                    _customQuestions.add(question)
                 }
+
+                // 解析正确答案
+                val correctAnswers = mutableSetOf<String>()
+                val answersElement = questionElement.getChild("correctAnswers")
+                answersElement?.getChildren("answer")?.forEach { answerElement ->
+                    correctAnswers.add(answerElement.text)
+                }
+
+                // 解析解析
+                val explanationElement = questionElement.getChild("explanation")
+                val explanation = explanationElement?.text ?: ""
+
+                val question = Question(
+                    id = id,
+                    title = title,
+                    category = category,
+                    level = difficulty,
+                    examType = examType,
+                    options = options,
+                    correctAnswers = correctAnswers,
+                    explanation = explanation,
+                    chapter = questionElement.getAttributeValue("chapter") ?: null
+                )
+
+                _questions[id] = question
             }
         } catch (e: Exception) {
-            logger.error("Error loading custom questions", e)
+            logger.error("Error loading questions", e)
         }
-    }
-
-    /**
-     * 加载默认题目到题库中
-     * 初始化时会加载一些示例题目作为默认题库
-     */
-    private fun loadDefaultQuestions() {
-        // 这里加载一些示例题目作为默认题库
-        val sampleQuestions = listOf(
-            Question(
-                id = "1",
-                title = "以下哪个是Java的关键字？",
-                options = mapOf(
-                    "A" to "class",
-                    "B" to "String",
-                    "C" to "println",
-                    "D" to "System"
-                ),
-                correctAnswers = setOf("A"),
-                explanation = "class 是Java语言的关键字，用于定义类。",
-                level = com.github.lilulei.ruankao.model.DifficultyLevel.EASY,
-                category = "Java基础知识",
-                year = 2023,
-                examType = ExamType.SOFTWARE_DESIGNER
-            ),
-            Question(
-                id = "2",
-                title = "在TCP/IP协议中，HTTP协议使用的默认端口号是？",
-                options = mapOf(
-                    "A" to "21",
-                    "B" to "23",
-                    "C" to "80",
-                    "D" to "443"
-                ),
-                correctAnswers = setOf("C"),
-                explanation = "HTTP协议使用的默认端口号是80，HTTPS使用的默认端口号是443。",
-                level = com.github.lilulei.ruankao.model.DifficultyLevel.EASY,
-                category = "计算机网络",
-                year = 2023,
-                examType = ExamType.NETWORK_ENGINEER
-            ),
-            Question(
-                id = "3",
-                title = "在关系数据库中，主键的作用是什么？",
-                options = mapOf(
-                    "A" to "加快查询速度",
-                    "B" to "唯一标识表中的每一条记录",
-                    "C" to "减少数据冗余",
-                    "D" to "提高安全性"
-                ),
-                correctAnswers = setOf("B"),
-                explanation = "主键的主要作用是唯一标识表中的每一条记录，确保数据的唯一性。",
-                level = com.github.lilulei.ruankao.model.DifficultyLevel.MEDIUM,
-                category = "数据库",
-                year = 2023,
-                examType = ExamType.DATABASE_ENGINEER
-            )
-        )
-
-        _questions.addAll(sampleQuestions)
-    }
-
-    /**
-     * 添加自定义题目到题库中
-     *
-     * @param question 要添加的题目对象
-     */
-    fun addCustomQuestion(question: Question) {
-        _customQuestions.add(question)
-    }
-
-    /**
-     * 根据题目ID删除自定义题目
-     *
-     * @param id 要删除的题目ID
-     */
-    fun removeCustomQuestion(id: String) {
-        _customQuestions.removeIf { it.id == id }
-    }
-
-    /**
-     * 根据分类获取题目列表
-     *
-     * @param category 题目分类
-     * @return 符合指定分类的题目列表
-     */
-    fun getQuestionsByCategory(category: String): List<Question> {
-        return allQuestions.filter { it.category == category }
-    }
-
-    /**
-     * 根据考试类型获取题目列表
-     *
-     * @param examType 考试类型枚举
-     * @return 符合指定考试类型的题目列表
-     */
-    fun getQuestionsByExamType(examType: ExamType): List<Question> {
-        return allQuestions.filter { it.examType == examType }
-    }
-
-    /**
-     * 根据难度级别获取题目列表
-     *
-     * @param level 难度级别枚举
-     * @return 符合指定难度级别的题目列表
-     */
-    fun getQuestionsByDifficulty(level: com.github.lilulei.ruankao.model.DifficultyLevel): List<Question> {
-        return allQuestions.filter { it.level == level }
-    }
-
-    /**
-     * 获取随机题目列表
-     *
-     * @param count 需要获取的题目数量
-     * @param examType 可选的考试类型过滤条件，默认为null表示不过滤
-     * @return 随机选择的题目列表
-     */
-    fun getRandomQuestions(count: Int, examType: ExamType? = null): List<Question> {
-        val filteredQuestions = if (examType != null) {
-            allQuestions.filter { it.examType == examType }
-        } else {
-            allQuestions
-        }
-
-        return if (filteredQuestions.size <= count) {
-            filteredQuestions.shuffled()
-        } else {
-            filteredQuestions.shuffled().take(count)
-        }
-    }
-
-    /**
-     * 根据题目ID获取单个题目
-     *
-     * @param id 要查找的题目ID
-     * @return 找到的题目对象，如果未找到则返回null
-     */
-    fun getQuestionById(id: String): Question? {
-        return allQuestions.find { it.id == id }
     }
 }

@@ -158,6 +158,28 @@ class PracticeService : PersistentStateComponent<Element> {
     }
 
     /**
+     * 开始一个新的练习会话，自动根据用户选择的身份获取对应级别的试题
+     * @param sessionType 练习类型（如模拟考试、专项练习等）
+     * @param project 当前项目实例
+     * @return 新创建的练习会话对象
+     */
+    fun startNewSessionWithUserLevel(sessionType: PracticeType, project: Project): PracticeSession {
+        val userIdentityService = project.getService(UserIdentityService::class.java)
+        val selectedLevel = userIdentityService.getSelectedLevel()
+        
+        val questionService = project.getService(QuestionService::class.java)
+        val questions = when (sessionType) {
+            PracticeType.RANDOM_PRACTICE -> questionService.getRandomQuestions(10)
+            PracticeType.SPECIAL_TOPIC -> questionService.getQuestionsByLevel(selectedLevel)
+            PracticeType.MOCK_EXAM -> questionService.getRandomQuestionsByDifficulty(com.github.lilulei.ruankao.model.DifficultyLevel.MEDIUM, 50)
+            PracticeType.DAILY_PRACTICE -> questionService.getRandomQuestions(10)
+            else -> questionService.getRandomQuestions(10) // 默认返回随机题目
+        }
+        
+        return startNewSession(sessionType, questions)
+    }
+
+    /**
      * 获取当前正在进行的练习会话
      * @return 当前练习会话对象，如果没有则返回null
      */
