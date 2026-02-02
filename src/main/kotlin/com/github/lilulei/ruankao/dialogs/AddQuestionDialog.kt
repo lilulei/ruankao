@@ -13,9 +13,12 @@ import java.awt.Component
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
+import java.time.LocalDate
+import java.util.Calendar
+import java.util.Date
 import javax.swing.*
 import javax.swing.DefaultComboBoxModel
-import kotlin.jvm.java
+
 
 /**
  * 添加试题对话框
@@ -96,6 +99,11 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
     private val explanationArea = JTextArea(5, 30).apply {
         text = "在此处输入题目解析..."
         toolTipText = "请输入题目解析，帮助理解题目"
+    }
+    private val dateSpinner = JSpinner(SpinnerDateModel()).apply {
+        editor = JSpinner.DateEditor(this, "yyyy-MM-dd")
+        toolTipText = "选择考试年份和日期"
+        value = Calendar.getInstance().time
     }
     private val optionsPanel = JPanel(GridBagLayout())
     private val optionsMap = mutableMapOf<JTextField, JTextField>() // 选项键值对
@@ -239,7 +247,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
         panel.add(chapterComboBox, gbc)
 
 
-
         // 难度等级
         gbc.gridx = 0
         gbc.gridy = 4
@@ -259,9 +266,29 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
         gbc.fill = GridBagConstraints.NONE
         panel.add(difficultyComboBox, gbc)
 
-        // 选项输入区域
+        // 日期选择
         gbc.gridx = 0
         gbc.gridy = 5
+        gbc.fill = GridBagConstraints.NONE
+        val dateLabel = JLabel("考试日期:")
+        val requiredDateLabel = JLabel("*")
+        requiredDateLabel.foreground = java.awt.Color.RED
+        
+        val datePanel = JPanel(java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0))
+        datePanel.add(dateLabel)
+        datePanel.add(requiredDateLabel)
+        datePanel.border = javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        
+        panel.add(datePanel, gbc)
+
+        gbc.gridx = 1
+        gbc.fill = GridBagConstraints.HORIZONTAL
+        gbc.weightx = 1.0
+        panel.add(dateSpinner, gbc)
+
+        // 选项输入区域
+        gbc.gridx = 0
+        gbc.gridy = 6
         gbc.gridwidth = 2
         gbc.fill = GridBagConstraints.BOTH
         gbc.weighty = 1.0
@@ -269,7 +296,7 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
 
         // 解析输入区域
         gbc.gridx = 0
-        gbc.gridy = 6
+        gbc.gridy = 7
         gbc.gridwidth = 1
         gbc.fill = GridBagConstraints.NONE
         gbc.weighty = 0.0
@@ -305,7 +332,7 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
         // 移除原有的复用gbc，改为在循环内创建独立约束
 
         // 添加选项输入行
-        for (i in 0 until 6) { // 最多支持6个选项
+        for (i in 0 until 4) { // 修改为4个选项（A、B、C、D）
             val keyField = JTextField(3).apply {
                 text = ""
                 toolTipText = when(i) {
@@ -313,8 +340,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
                     1 -> "选项B标识，如：B"
                     2 -> "选项C标识，如：C"
                     3 -> "选项D标识，如：D"
-                    4 -> "选项E标识，如：E"
-                    5 -> "选项F标识，如：F"
                     else -> "选项标识，如：A、B、C、D"
                 }
                 // 添加占位符效果
@@ -324,8 +349,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
                     1 -> "B"
                     2 -> "C"
                     3 -> "D"
-                    4 -> "E"
-                    5 -> "F"
                     else -> ""
                 }
                 addFocusListener(object : java.awt.event.FocusAdapter() {
@@ -335,8 +358,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
                                 1 -> "B"
                                 2 -> "C"
                                 3 -> "D"
-                                4 -> "E"
-                                5 -> "F"
                                 else -> ""
                             }) {
                             text = ""
@@ -351,8 +372,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
                                 1 -> "B"
                                 2 -> "C"
                                 3 -> "D"
-                                4 -> "E"
-                                5 -> "F"
                                 else -> ""
                             }
                             foreground = java.awt.Color.GRAY
@@ -367,8 +386,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
                     1 -> "选项B的具体内容"
                     2 -> "选项C的具体内容"
                     3 -> "选项D的具体内容"
-                    4 -> "选项E的具体内容"
-                    5 -> "选项F的具体内容"
                     else -> "选项具体内容"
                 }
                 // 添加占位符效果
@@ -378,8 +395,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
                     1 -> "选项B内容"
                     2 -> "选项C内容"
                     3 -> "选项D内容"
-                    4 -> "选项E内容"
-                    5 -> "选项F内容"
                     else -> ""
                 }
                 addFocusListener(object : java.awt.event.FocusAdapter() {
@@ -389,8 +404,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
                                 1 -> "选项B内容"
                                 2 -> "选项C内容"
                                 3 -> "选项D内容"
-                                4 -> "选项E内容"
-                                5 -> "选项F内容"
                                 else -> ""
                             }) {
                             text = ""
@@ -405,8 +418,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
                                 1 -> "选项B内容"
                                 2 -> "选项C内容"
                                 3 -> "选项D内容"
-                                4 -> "选项E内容"
-                                5 -> "选项F内容"
                                 else -> ""
                             }
                             foreground = java.awt.Color.GRAY
@@ -475,7 +486,7 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
         val buttonGroup = ButtonGroup()
         val answerCheckBoxes = mutableListOf<JCheckBox>()
 
-        for (i in 0 until 6) {
+        for (i in 0 until 4) { // 修改为4个选项
             val keyField = optionsMap.keys.elementAtOrNull(i) ?: continue
             val keyText = if (keyField.text.trim().isEmpty()) {
                 when (i) {
@@ -483,8 +494,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
                     1 -> "B"
                     2 -> "C"
                     3 -> "D"
-                    4 -> "E"
-                    5 -> "F"
                     else -> ""
                 }
             } else {
@@ -594,17 +603,26 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
             return
         }
 
+        // 获取日期
+        val dateValue = dateSpinner.value as? Date
+        val localDate = if (dateValue != null) {
+            dateValue.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        } else {
+            LocalDate.now()
+        }
+
         // 创建并添加新题目
         val newQuestion = Question(
             id = generateQuestionId(),
             title = title,
-            category = level, // 使用用户选择的级别作为分类
+            category = level,
             examType = examType,
             level = difficulty,
-            chapter = chapter, // 使用绑定的章节
+            chapter = chapter,
             options = options,
             correctAnswers = correctAnswers,
-            explanation = explanation
+            explanation = explanation,
+            year = localDate  // 添加日期参数
         )
 
         questionService.addQuestion(newQuestion)
@@ -659,16 +677,25 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
         }
         val difficulty = difficultyComboBox.selectedItem as DifficultyLevel
 
+        // 获取日期
+        val dateValue = dateSpinner.value as? Date
+        val localDate = if (dateValue != null) {
+            dateValue.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        } else {
+            LocalDate.now()
+        }
+
         return Question(
             id = generateQuestionId(),
             title = title,
-            category = level, // 使用用户选择的级别作为分类
+            category = level,
             examType = examType,
             level = difficulty,
-            chapter = if (chapter.isNotEmpty()) chapter else null, // 添加章节信息
+            chapter = if (chapter.isNotEmpty()) chapter else null,
             options = options,
             correctAnswers = correctAnswers,
-            explanation = explanation
+            explanation = explanation,
+            year = localDate
         )
     }
 }

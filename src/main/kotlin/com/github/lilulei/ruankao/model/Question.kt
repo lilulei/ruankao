@@ -1,5 +1,7 @@
 package com.github.lilulei.ruankao.model
 
+import java.time.LocalDate
+
 /**
  * 题目数据类
  * @param id 题目唯一标识符
@@ -21,7 +23,7 @@ data class Question(
     val level: DifficultyLevel = DifficultyLevel.MEDIUM,
     val category: String = "通用",
     val chapter: String? = null, // 知识点章节
-    val year: Int = 0, // 考试年份
+    val year: LocalDate = LocalDate.of(2025, 11, 8), // 考试年份
     val examType: ExamType = ExamType.SOFTWARE_DESIGNER // 考试类型
 )
 

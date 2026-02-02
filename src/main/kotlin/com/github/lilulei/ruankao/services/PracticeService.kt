@@ -90,7 +90,11 @@ class PracticeService : PersistentStateComponent<Element> {
                 val sessionId = sessionElement.getAttributeValue("sessionId")
                 val startTime = sessionElement.getAttributeValue("startTime")?.toLongOrNull() ?: System.currentTimeMillis()
                 val endTime = sessionElement.getAttributeValue("endTime")?.toLongOrNull()
-                val sessionType = enumValueOf<PracticeType>(sessionElement.getAttributeValue("sessionType"))
+                val sessionType = try {
+                    PracticeType.valueOf(sessionElement.getAttributeValue("sessionType") ?: "RANDOM_PRACTICE")
+                } catch (e: IllegalArgumentException) {
+                    PracticeType.RANDOM_PRACTICE
+                }
 
                 val questions = mutableListOf<Question>()
                 val questionsElement = sessionElement.getChild("questions")
