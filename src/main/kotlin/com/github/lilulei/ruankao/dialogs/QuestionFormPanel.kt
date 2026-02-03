@@ -464,7 +464,7 @@ class QuestionFormPanel(
     
     private fun createAnswerSelectionPanel(): JPanel {
         val panel = JPanel()
-        panel.border = BorderFactory.createTitledBorder("选择正确答案${if (mode != FormMode.VIEW) "*" else ""}")
+        panel.border = BorderFactory.createTitledBorder("选择正确答案*")
 
         answerCheckBoxes.clear()
         

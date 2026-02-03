@@ -54,16 +54,9 @@ class ViewQuestionDialog(private val project: Project, private val question: Que
     }
 
     override fun createCenterPanel(): JComponent {
-        val mainPanel = JPanel(BorderLayout())
-        mainPanel.preferredSize = Dimension(800, 600)
-        
-        val formPanelComponent = formPanel.createFormPanel()
-        val scrollPane = JScrollPane(formPanelComponent)
-        scrollPane.verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
-        scrollPane.horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
-        
-        mainPanel.add(scrollPane, BorderLayout.CENTER)
-        return mainPanel
+        // 修改：直接返回表单面板，与编辑界面保持一致
+        // 不再使用JScrollPane包装，避免布局变化
+        return formPanel.createFormPanel()
     }
 
     override fun createActions(): Array<Action> {
