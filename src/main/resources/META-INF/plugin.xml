@@ -50,7 +50,7 @@
         <action id="ManageQuestionsAction"
                 class="com.github.lilulei.ruankao.actions.ManageQuestionsAction"
                 text="Manage Questions"
-                description="Add or import questions for Soft Exam Plugin">
+                description="Open comprehensive question management interface">
             <add-to-group group-id="ToolsMenu" relative-to-action="Generate" anchor="after"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
         </action>

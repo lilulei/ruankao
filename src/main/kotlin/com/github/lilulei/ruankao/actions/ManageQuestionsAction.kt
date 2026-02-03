@@ -3,6 +3,7 @@ package com.github.lilulei.ruankao.actions
 import com.github.lilulei.ruankao.dialogs.AddQuestionDialog
 import com.github.lilulei.ruankao.dialogs.ChapterManagementDialog
 import com.github.lilulei.ruankao.dialogs.ImportQuestionsDialog
+import com.github.lilulei.ruankao.dialogs.QuestionManagementDialog
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
@@ -14,51 +15,45 @@ import com.intellij.openapi.project.Project
 class ManageQuestionsAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        showQuestionManagementDialog(project)
+        showExistingQuestionManagementDialog(project)
     }
 
-    private fun showQuestionManagementDialog(project: Project) {
-        val options = arrayOf("添加单个试题", "批量导入试题", "管理知识点章节", "取消")
-        val choice = javax.swing.JOptionPane.showOptionDialog(
-            null,
-            "请选择试题管理操作：",
-            "试题管理",
-            javax.swing.JOptionPane.DEFAULT_OPTION,
-            javax.swing.JOptionPane.QUESTION_MESSAGE,
-            null,
-            options,
-            options[0]
-        )
 
-        when (choice) {
-            0 -> showAddQuestionDialog(project)
-            1 -> showImportQuestionsDialog(project)
-            2 -> showChapterManagementDialog(project)
-            else -> return
-        }
+
+    private fun showExistingQuestionManagementDialog(project: Project) {
+        val dialog = QuestionManagementDialog(project)
+        dialog.show()
     }
 
-    private fun showAddQuestionDialog(project: Project) {
-        val dialog = AddQuestionDialog(project)
-        if (dialog.showAndGet()) {
+    private fun showTemplateExample(project: Project) {
+        try {
+            // 获取模板文件路径
+            val templatePath = "src/main/resources/templates/questions_template.json"
+            
+            val message = """
+                |模板文件位置：$templatePath
+                |
+                |您可以：
+                |1. 直接复制此文件作为导入模板
+                |2. 参考其格式创建自己的试题文件
+                |3. 使用相对路径导入：$templatePath
+                |
+                |模板包含5个示例题目，涵盖不同难度和考试类型。
+                |""".trimMargin()
+            
             javax.swing.JOptionPane.showMessageDialog(
                 null,
-                "试题添加成功！",
-                "成功",
+                message,
+                "模板示例说明",
                 javax.swing.JOptionPane.INFORMATION_MESSAGE
             )
+        } catch (e: Exception) {
+            javax.swing.JOptionPane.showMessageDialog(
+                null,
+                "无法显示模板信息：${e.message}",
+                "错误",
+                javax.swing.JOptionPane.ERROR_MESSAGE
+            )
         }
-    }
-
-    private fun showImportQuestionsDialog(project: Project) {
-        val dialog = ImportQuestionsDialog(project)
-        if (dialog.showAndGet()) {
-            // 导入结果已经在对话框中显示
-        }
-    }
-
-    private fun showChapterManagementDialog(project: Project) {
-        val dialog = ChapterManagementDialog(project)
-        dialog.show()
     }
 }

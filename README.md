@@ -33,6 +33,9 @@
 - [x] 练习界面 - PracticeToolWindowFactory
 - [x] 错题本界面 - WrongQuestionsToolWindowFactory
 - [x] 项目启动活动 - MyProjectActivity
+- [x] 综合试题管理界面（添加、导入、模板、章节、编辑、删除、查看）
+- [x] 统一的试题表单UI组件（复用添加、编辑、查看界面）
+- [x] UI细节优化（中文难度选项、提示文本、标签对齐）
 
 ### 对应主要类文件
 
