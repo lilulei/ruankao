@@ -136,7 +136,7 @@ class QuestionFormPanel(
         }
         
         // 设置难度
-        difficultyComboBox.selectedItem = question.level
+        difficultyComboBox.selectedItem = question.level.displayName
         
         // 设置解析
         explanationArea.text = question.explanation

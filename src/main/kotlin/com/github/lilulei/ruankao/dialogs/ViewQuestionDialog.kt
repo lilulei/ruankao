@@ -25,7 +25,7 @@ class ViewQuestionDialog(private val project: Project, private val question: Que
         formPanel.titleField.text = question.title
         formPanel.levelLabel.text = question.category
         formPanel.examTypeLabel.text = question.examType.displayName
-        formPanel.difficultyComboBox.selectedItem = question.level
+        formPanel.difficultyComboBox.selectedItem = question.level.displayName
         formPanel.explanationArea.text = question.explanation
         
         // 设置章节
