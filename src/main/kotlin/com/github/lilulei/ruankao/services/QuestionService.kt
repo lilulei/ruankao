@@ -130,6 +130,8 @@ class QuestionService : PersistentStateComponent<Element> {
         val removed = _questions.remove(id)
         if (removed != null) {
             logger.info("删除试题: $id")
+            // IntelliJ的PersistentStateComponent会自动处理持久化
+            // 删除后确保界面刷新即可
         }
     }
 
