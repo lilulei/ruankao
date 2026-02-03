@@ -1,5 +1,6 @@
 package com.github.lilulei.ruankao.model
 
+import kotlinx.serialization.Serializable
 import java.util.*
 
 /**
@@ -11,6 +12,7 @@ import java.util.*
  * @property answers 用户答案记录映射，键为问题ID，值为答案记录
  * @property sessionType 练习类型枚举
  */
+@Serializable
 data class PracticeSession(
     val sessionId: String = UUID.randomUUID().toString(),
     val startTime: Long = System.currentTimeMillis(),
@@ -23,6 +25,7 @@ data class PracticeSession(
 /**
  * 练习类型枚举，定义了不同的练习模式
  */
+@Serializable
 enum class PracticeType {
     DAILY_PRACTICE, // 每日一练
     SPECIAL_TOPIC,  // 专项练习
@@ -41,6 +44,7 @@ enum class PracticeType {
  * @property categoryStats 各分类统计信息映射
  * @property achievements 获得的成就集合
  */
+@Serializable
 data class LearningStatistics(
     val totalPractices: Int = 0,
     val totalQuestions: Int = 0,
@@ -59,6 +63,7 @@ data class LearningStatistics(
  * @property correctAnswers 该分类下正确回答数量
  * @property mastered 是否已掌握该分类
  */
+@Serializable
 data class CategoryStat(
     val categoryName: String,
     val totalQuestions: Int = 0,

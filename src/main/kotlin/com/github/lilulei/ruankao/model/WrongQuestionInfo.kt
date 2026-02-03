@@ -1,5 +1,7 @@
 package com.github.lilulei.ruankao.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * 错题信息数据类
  * 用于记录题目错误统计相关信息，包括错误次数、最后错误时间、掌握状态等
@@ -10,6 +12,7 @@ package com.github.lilulei.ruankao.model
  * @property mastered 是否已掌握，默认为false
  * @property consecutiveCorrectCount 连续正确回答的次数，默认为0
  */
+@Serializable
 data class WrongQuestionInfo(
     val questionId: String,
     val errorCount: Int = 1,

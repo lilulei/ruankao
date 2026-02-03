@@ -1,5 +1,7 @@
 package com.github.lilulei.ruankao.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * 试题笔记数据类
  * 用于记录用户对试题的备注和知识点标记
@@ -10,6 +12,7 @@ package com.github.lilulei.ruankao.model
  * @property createdAt 创建时间戳
  * @property updatedAt 更新时间戳
  */
+@Serializable
 data class QuestionNote(
     val questionId: String,
     val note: String = "",

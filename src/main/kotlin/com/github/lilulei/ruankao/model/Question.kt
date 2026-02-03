@@ -1,5 +1,6 @@
 package com.github.lilulei.ruankao.model
 
+import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
 /**
@@ -14,6 +15,7 @@ import java.time.LocalDate
  * @param year 考试年份，默认为0表示未指定年份
  * @param examType 考试类型，默认为软件设计师
  */
+@Serializable
 data class Question(
     val id: String,
     val title: String,
@@ -30,6 +32,7 @@ data class Question(
 /**
  * 难度等级枚举
  */
+@Serializable
 enum class DifficultyLevel(val displayName: String) {
     EASY("简单"),
     MEDIUM("中等"),
@@ -39,6 +42,7 @@ enum class DifficultyLevel(val displayName: String) {
 /**
  * 考试类型枚举
  */
+@Serializable
 enum class ExamType(val displayName: String) {
     // 软考高级 (5个)
     SYSTEM_ANALYST("系统分析师"),
@@ -81,6 +85,8 @@ enum class ExamType(val displayName: String) {
  * @param isCorrect 答题是否正确
  * @param answeredAt 答题时间戳，默认为当前系统时间
  */
+
+@Serializable
 data class AnswerRecord(
     val questionId: String,
     val selectedOptions: Set<String>,

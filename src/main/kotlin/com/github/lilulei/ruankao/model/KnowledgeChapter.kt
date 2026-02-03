@@ -1,5 +1,6 @@
 package com.github.lilulei.ruankao.model
 
+import kotlinx.serialization.Serializable
 /**
  * 知识点章节数据类
  * @param id 章节唯一标识符
@@ -10,6 +11,7 @@ package com.github.lilulei.ruankao.model
  * @param createdAt 创建时间戳
  * @param updatedAt 更新时间戳
  */
+@Serializable
 data class KnowledgeChapter(
     val id: String,
     val name: String,
