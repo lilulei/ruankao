@@ -275,14 +275,6 @@ class QuestionFormPanel(
                 text = styledText
             }
         }
-//        val datePanel = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
-//            isOpaque = false
-//            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
-//            add(JLabel("考试日期*").apply {
-//                preferredSize = Dimension(labelWidth, preferredSize.height)
-//                foreground = Color.WHITE
-//            })
-//        }
         panel.add(datePanel, gbc)
 
         gbc.gridx = 1
