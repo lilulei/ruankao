@@ -164,12 +164,10 @@ class QuestionFormPanel(
         gbc.anchor = GridBagConstraints.WEST
         val levelPanel = JLabel("考试级别").apply {
             foreground = Color.WHITE
-            if (mode != FormMode.VIEW) {
-                text = "考试级别*"
-                // 单独给星号设置红色
-                val styledText = "<html>考试级别<span style='color:red;'>*</span></html>"
-                text = styledText
-            }
+            text = "考试级别*"
+            // 单独给星号设置红色
+            val styledText = "<html>考试级别<span style='color:red;'>*</span></html>"
+            text = styledText
         }
         panel.add(levelPanel, gbc)
 
@@ -185,12 +183,10 @@ class QuestionFormPanel(
         gbc.anchor = GridBagConstraints.WEST
         val typePanel = JLabel("考试类型").apply {
             foreground = Color.WHITE
-            if (mode != FormMode.VIEW) {
-                text = "考试类型*"
-                // 单独给星号设置红色
-                val styledText = "<html>考试类型<span style='color:red;'>*</span></html>"
-                text = styledText
-            }
+            text = "考试类型*"
+            // 单独给星号设置红色
+            val styledText = "<html>考试类型<span style='color:red;'>*</span></html>"
+            text = styledText
         }
         panel.add(typePanel, gbc)
 
@@ -205,12 +201,10 @@ class QuestionFormPanel(
         gbc.anchor = GridBagConstraints.WEST
         val titlePanel = JLabel("题目标题").apply {
             foreground = Color.WHITE
-            if (mode != FormMode.VIEW) {
-                text = "题目标题*"
-                // 单独给星号设置红色
-                val styledText = "<html>题目标题<span style='color:red;'>*</span></html>"
-                text = styledText
-            }
+            text = "题目标题*"
+            // 单独给星号设置红色
+            val styledText = "<html>题目标题<span style='color:red;'>*</span></html>"
+            text = styledText
         }
         panel.add(titlePanel, gbc)
 
@@ -226,12 +220,10 @@ class QuestionFormPanel(
         gbc.anchor = GridBagConstraints.WEST
         val chapterPanel = JLabel("知识点章节").apply {
             foreground = Color.WHITE
-            if (mode != FormMode.VIEW) {
-                text = "知识点章节*"
-                // 单独给星号设置红色
-                val styledText = "<html>知识点章节<span style='color:red;'>*</span></html>"
-                text = styledText
-            }
+            text = "知识点章节*"
+            // 单独给星号设置红色
+            val styledText = "<html>知识点章节<span style='color:red;'>*</span></html>"
+            text = styledText
         }
         panel.add(chapterPanel, gbc)
 
@@ -247,12 +239,10 @@ class QuestionFormPanel(
         gbc.anchor = GridBagConstraints.WEST
         val difficultyPanel = JLabel("难度").apply {
             foreground = Color.WHITE
-            if (mode != FormMode.VIEW) {
-                text = "难度*"
-                // 单独给星号设置红色
-                val styledText = "<html>难度<span style='color:red;'>*</span></html>"
-                text = styledText
-            }
+            text = "难度*"
+            // 单独给星号设置红色
+            val styledText = "<html>难度<span style='color:red;'>*</span></html>"
+            text = styledText
         }
         panel.add(difficultyPanel, gbc)
 
@@ -268,12 +258,10 @@ class QuestionFormPanel(
         gbc.anchor = GridBagConstraints.WEST
         val datePanel = JLabel("考试日期").apply {
             foreground = Color.WHITE
-            if (mode != FormMode.VIEW) {
-                text = "考试日期*"
-                // 单独给星号设置红色
-                val styledText = "<html>考试日期<span style='color:red;'>*</span></html>"
-                text = styledText
-            }
+            text = "考试日期*"
+            // 单独给星号设置红色
+            val styledText = "<html>考试日期<span style='color:red;'>*</span></html>"
+            text = styledText
         }
         panel.add(datePanel, gbc)
 
@@ -299,12 +287,10 @@ class QuestionFormPanel(
         gbc.anchor = GridBagConstraints.WEST
         val explanationLabel = JLabel("解析").apply {
             foreground = Color.WHITE
-            if (mode != FormMode.VIEW) {
-                text = "解析*"
-                // 单独给星号设置红色
-                val styledText = "<html>解析<span style='color:red;'>*</span></html>"
-                text = styledText
-            }
+            text = "解析*"
+            // 单独给星号设置红色
+            val styledText = "<html>解析<span style='color:red;'>*</span></html>"
+            text = styledText
         }
         panel.add(explanationLabel, gbc)
 
