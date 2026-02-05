@@ -231,7 +231,7 @@ class PracticeToolWindowFactory : ToolWindowFactory {
             return if (userIdentityService.isIdentitySelected()) {
                 val examType = userIdentityService.getSelectedExamType()
                 val level = userIdentityService.getSelectedLevel()
-                "$level - ${examType.displayName} (点击修改)"
+                "${level.displayName} - ${examType.displayName} (点击修改)"
             } else {
                 "未选择身份 (点击设置)"
             }

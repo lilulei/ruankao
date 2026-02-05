@@ -1,6 +1,7 @@
 package com.github.lilulei.ruankao.dialogs
 
 import com.github.lilulei.ruankao.model.ExamLevel
+import com.github.lilulei.ruankao.model.ExamType
 import com.github.lilulei.ruankao.model.Question
 import com.github.lilulei.ruankao.services.QuestionService
 import com.github.lilulei.ruankao.services.UserIdentityService
@@ -28,8 +29,8 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
     
     // 筛选组件
     private lateinit var searchField: JTextField
-    private lateinit var levelFilterComboBox: JComboBox<ExamLevel?>
-    private lateinit var identityFilterCheckBox: JCheckBox
+    private lateinit var identityLevelComboBox: JComboBox<ExamLevel>
+    private lateinit var identityTypeComboBox: JComboBox<ExamType>
 
     init {
         title = "试题管理"
@@ -80,7 +81,7 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
 
     private fun createFilterPanel(): JPanel {
         val panel = JPanel(FlowLayout(FlowLayout.LEFT))
-        panel.border = BorderFactory.createTitledBorder("筛选条件")
+        panel.border = BorderFactory.createTitledBorder("身份选择")
         
         // 搜索框
         panel.add(JLabel("题目搜索:"))
@@ -91,11 +92,11 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         }
         panel.add(searchField)
         
-        // 考试级别筛选
+        // 考试级别选择（一级）
         panel.add(Box.createHorizontalStrut(10))
         panel.add(JLabel("考试级别:"))
-        levelFilterComboBox = JComboBox(arrayOf<ExamLevel?>(null, ExamLevel.SENIOR, ExamLevel.INTERMEDIATE, ExamLevel.JUNIOR))
-        levelFilterComboBox.renderer = object : DefaultListCellRenderer() {
+        identityLevelComboBox = JComboBox(ExamLevel.values())
+        identityLevelComboBox.renderer = object : DefaultListCellRenderer() {
             override fun getListCellRendererComponent(
                 list: JList<*>?,
                 value: Any?,
@@ -105,25 +106,56 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
             ): Component {
                 val component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
                 text = when (value) {
-                    null -> "全部级别"
                     is ExamLevel -> value.displayName
                     else -> value.toString()
                 }
                 return component
             }
         }
-        levelFilterComboBox.addActionListener {
-            applyFilters()
+        // 设置初始选中项为用户当前选择的级别
+        identityLevelComboBox.selectedItem = userIdentityService.getSelectedLevel()
+        identityLevelComboBox.addActionListener {
+            updateExamTypeComboBox()
+            // 只有在初始化完成后才应用筛选
+            if (::tableModel.isInitialized) {
+                applyFilters()
+            }
         }
-        panel.add(levelFilterComboBox)
+        panel.add(identityLevelComboBox)
         
-        // 身份筛选
+        // 考试类型选择（二级联动）
         panel.add(Box.createHorizontalStrut(10))
-        identityFilterCheckBox = JCheckBox("按当前身份筛选")
-        identityFilterCheckBox.addActionListener {
-            applyFilters()
+        panel.add(JLabel("考试类型:"))
+        identityTypeComboBox = JComboBox(arrayOf<ExamType>())
+        identityTypeComboBox.renderer = object : DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(
+                list: JList<*>?,
+                value: Any?,
+                index: Int,
+                isSelected: Boolean,
+                cellHasFocus: Boolean
+            ): Component {
+                val component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+                text = when (value) {
+                    is ExamType -> value.displayName
+                    else -> value.toString()
+                }
+                return component
+            }
         }
-        panel.add(identityFilterCheckBox)
+        identityTypeComboBox.addActionListener {
+            syncLevelFromType()
+            // 只有在初始化完成后才应用筛选
+            if (::tableModel.isInitialized) {
+                applyFilters()
+            }
+        }
+        panel.add(identityTypeComboBox)
+        
+        // 初始化考试类型下拉框（延迟初始化，避免tableModel未准备好）
+        SwingUtilities.invokeLater {
+            updateExamTypeComboBox()
+        }
         
         // 应用筛选按钮
         val applyButton = JButton("应用筛选")
@@ -133,9 +165,11 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         panel.add(applyButton)
         
         // 重置筛选按钮
-        val resetButton = JButton("重置筛选")
+        val resetButton = JButton("重置选择")
         resetButton.addActionListener {
-            resetFilters()
+            identityLevelComboBox.selectedItem = userIdentityService.getSelectedLevel()
+            updateExamTypeComboBox()
+            applyFilters()
         }
         panel.add(resetButton)
 
@@ -190,29 +224,29 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
             tempList = tempList.filter { it.title.contains(searchText, ignoreCase = true) }
         }
         
-        // 按考试级别筛选
-        val selectedLevel = levelFilterComboBox.selectedItem as? ExamLevel
+        // 按考试级别筛选（来自身份选择）
+        val selectedLevel = identityLevelComboBox.selectedItem as? ExamLevel
         if (selectedLevel != null) {
             tempList = tempList.filter { it.examLevel == selectedLevel }
         }
         
-        // 按当前身份筛选
-        if (identityFilterCheckBox.isSelected && userIdentityService.isIdentitySelected()) {
-            val currentLevel = userIdentityService.getSelectedLevel()
-            val currentExamType = userIdentityService.getSelectedExamType()
-            tempList = tempList.filter { 
-                it.examLevel == currentLevel && it.examType == currentExamType 
-            }
+        // 按考试类型筛选（来自身份选择）
+        val selectedType = identityTypeComboBox.selectedItem as? ExamType
+        if (selectedType != null) {
+            tempList = tempList.filter { it.examType == selectedType }
         }
         
         filteredQuestionList.addAll(tempList)
-        tableModel.fireTableDataChanged()
+        // 只有在tableModel已初始化的情况下才更新表格
+        if (::tableModel.isInitialized) {
+            tableModel.fireTableDataChanged()
+        }
     }
 
     private fun resetFilters() {
         searchField.text = ""
-        levelFilterComboBox.selectedIndex = 0
-        identityFilterCheckBox.isSelected = false
+        identityLevelComboBox.selectedItem = userIdentityService.getSelectedLevel()
+        updateExamTypeComboBox()
         applyFilters()
     }
 
@@ -393,6 +427,74 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         dialog.show()
     }
 
+    /**
+     * 更新考试类型下拉框（根据选中的考试级别）
+     */
+    private fun updateExamTypeComboBox() {
+        val selectedLevel = identityLevelComboBox.selectedItem as? ExamLevel
+        if (selectedLevel != null) {
+            val examTypes = userIdentityService.getExamTypesForLevel(selectedLevel)
+            identityTypeComboBox.removeAllItems()
+            examTypes.forEach { identityTypeComboBox.addItem(it) }
+            
+            // 设置默认选中项为该级别的默认考试类型
+            val defaultType = userIdentityService.getDefaultExamTypeForLevel(selectedLevel)
+            identityTypeComboBox.selectedItem = defaultType
+        }
+    }
+    
+    /**
+     * 根据选中的考试类型同步更新考试级别
+     */
+    private fun syncLevelFromType() {
+        val selectedType = identityTypeComboBox.selectedItem as? ExamType
+        if (selectedType != null) {
+            // 获取该考试类型对应的级别
+            val correspondingLevel = when (selectedType) {
+                // 软考高级
+                ExamType.SYSTEM_ANALYST,
+                ExamType.SYSTEM_ARCHITECT,
+                ExamType.NETWORK_PLANNER,
+                ExamType.PROJECT_MANAGER,
+                ExamType.SYSTEM_PLANNING_MANAGER -> ExamLevel.SENIOR
+                
+                // 软考中级
+                ExamType.SYSTEM_INTEGRATION_ENGINEER,
+                ExamType.NETWORK_ENGINEER,
+                ExamType.INFORMATION_SYSTEM_MANAGEMENT_ENGINEER,
+                ExamType.SOFTWARE_TESTER,
+                ExamType.DATABASE_ENGINEER,
+                ExamType.MULTIMEDIA_DESIGNER,
+                ExamType.SOFTWARE_DESIGNER,
+                ExamType.INFORMATION_SYSTEM_SUPERVISOR,
+                ExamType.E_COMMERCE_DESIGNER,
+                ExamType.INFORMATION_SECURITY_ENGINEER,
+                ExamType.EMBEDDED_SYSTEM_DESIGNER,
+                ExamType.SOFTWARE_PROCESS_EVALUATOR,
+                ExamType.COMPUTER_AIDED_DESIGNER,
+                ExamType.COMPUTER_HARDWARE_ENGINEER,
+                ExamType.INFORMATION_TECHNOLOGY_SUPPORT_ENGINEER -> ExamLevel.INTERMEDIATE
+                
+                // 软考初级
+                ExamType.PROGRAMMER,
+                ExamType.NETWORK_ADMINISTRATOR,
+                ExamType.INFORMATION_PROCESSING_TECHNICIAN,
+                ExamType.INFORMATION_SYSTEM_OPERATION_MANAGER,
+                ExamType.MULTIMEDIA_APPLICATION_DESIGNER,
+                ExamType.E_COMMERCE_TECHNICIAN,
+                ExamType.WEB_DESIGNER -> ExamLevel.JUNIOR
+            }
+            
+            // 更新级别选择框，避免触发循环事件
+            val actionListeners = identityLevelComboBox.actionListeners.toList()
+            actionListeners.forEach { identityLevelComboBox.removeActionListener(it) }
+            identityLevelComboBox.selectedItem = correspondingLevel
+            actionListeners.forEach { listener ->
+                identityLevelComboBox.addActionListener(listener)
+            }
+        }
+    }
+    
     /**
      * 试题表格模型 - 支持复选框
      */
