@@ -27,6 +27,23 @@ class QuestionFormPanel(
     // UI组件
     val titleField = JTextField(30).apply {
         toolTipText = "请输入题目内容"
+        foreground = Color.GRAY
+        text = "请输入题目内容..."
+        addFocusListener(object : java.awt.event.FocusAdapter() {
+            override fun focusGained(e: java.awt.event.FocusEvent?) {
+                if (text == "请输入题目内容...") {
+                    text = ""
+                    foreground = Color.BLACK
+                }
+            }
+
+            override fun focusLost(e: java.awt.event.FocusEvent?) {
+                if (text.isEmpty()) {
+                    text = "请输入题目内容..."
+                    foreground = Color.GRAY
+                }
+            }
+        })
     }
     
     val levelLabel = JLabel().apply {
@@ -59,6 +76,23 @@ class QuestionFormPanel(
     
     val explanationArea = JTextArea(5, 30).apply {
         toolTipText = "请输入题目解析，帮助理解题目"
+        foreground = Color.GRAY
+        text = "在此处输入题目解析..."
+        addFocusListener(object : java.awt.event.FocusAdapter() {
+            override fun focusGained(e: java.awt.event.FocusEvent?) {
+                if (text == "在此处输入题目解析...") {
+                    text = ""
+                    foreground = Color.BLACK
+                }
+            }
+
+            override fun focusLost(e: java.awt.event.FocusEvent?) {
+                if (text.isEmpty()) {
+                    text = "在此处输入题目解析..."
+                    foreground = Color.GRAY
+                }
+            }
+        })
     }
     
     val dateSpinner = JSpinner(SpinnerDateModel()).apply {
@@ -593,7 +627,11 @@ class QuestionFormPanel(
         val title = titleField.text.trim()
         val explanation = explanationArea.text.trim()
         
-        if (title.isEmpty() || explanation.isEmpty()) {
+        // 检查是否为提示文字
+        val isTitlePlaceholder = title == "请输入题目内容..." && titleField.foreground == Color.GRAY
+        val isExplanationPlaceholder = explanation == "在此处输入题目解析..." && explanationArea.foreground == Color.GRAY
+        
+        if (title.isEmpty() || explanation.isEmpty() || isTitlePlaceholder || isExplanationPlaceholder) {
             return null
         }
         
