@@ -1,5 +1,6 @@
 package com.github.lilulei.ruankao.services
 
+import com.github.lilulei.ruankao.model.ExamLevel
 import com.github.lilulei.ruankao.model.ExamType
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
@@ -15,10 +16,10 @@ import org.jdom.Element
 @State(name = "UserIdentityService", storages = [Storage("user_identity.xml")])
 @Service(Service.Level.PROJECT)
 class UserIdentityService : PersistentStateComponent<Element> {
-    private var selectedExamType: ExamType = ExamType.SOFTWARE_DESIGNER
-    private var selectedLevel: String = "软考高级"
+    private var selectedExamType: ExamType = ExamType.PROJECT_MANAGER
+    private var selectedLevel: ExamLevel = ExamLevel.SENIOR
     private var hasUserMadeSelection: Boolean = false
-    private var defaultChapter: String = "默认章节"  // 新增：默认章节字段
+    private var defaultChapter: String = "项目管理知识域"  // 新增：默认章节字段
     
     companion object {
         fun getInstance(project: Project): UserIdentityService {
@@ -29,27 +30,34 @@ class UserIdentityService : PersistentStateComponent<Element> {
     override fun getState(): Element {
         val element = Element("UserIdentityService")
         element.setAttribute("selectedExamType", selectedExamType.name)
-        element.setAttribute("selectedLevel", selectedLevel)
+        element.setAttribute("selectedLevel", selectedLevel.name)
         element.setAttribute("hasUserMadeSelection", hasUserMadeSelection.toString())
         element.setAttribute("defaultChapter", defaultChapter)  // 新增：保存默认章节
         return element
     }
     
     override fun loadState(state: Element) {
-        val examTypeStr = state.getAttributeValue("selectedExamType") ?: ExamType.SOFTWARE_DESIGNER.name
-        val levelStr = state.getAttributeValue("selectedLevel") ?: "软考高级"
+        val examTypeStr = state.getAttributeValue("selectedExamType") ?: ExamType.PROJECT_MANAGER.name
+        val levelStr = state.getAttributeValue("selectedLevel") ?: ExamLevel.SENIOR.name
         val hasUserMadeSelectionStr = state.getAttributeValue("hasUserMadeSelection") ?: "false"
-        val defaultChapterStr = state.getAttributeValue("defaultChapter") ?: "默认章节"  // 新增：加载默认章节
+        val defaultChapterStr = state.getAttributeValue("defaultChapter") ?: "项目管理知识域"  // 新增：加载默认章节
         
         // 尝试通过名称匹配考试类型
         selectedExamType = try {
             ExamType.valueOf(examTypeStr)
         } catch (e: IllegalArgumentException) {
             // 如果找不到对应的枚举值，使用默认值
-            ExamType.SOFTWARE_DESIGNER
+            ExamType.PROJECT_MANAGER
         }
         
-        selectedLevel = levelStr
+        // 尝试通过名称匹配考试级别
+        selectedLevel = try {
+            ExamLevel.valueOf(levelStr)
+        } catch (e: IllegalArgumentException) {
+            // 如果找不到对应的枚举值，使用默认值
+            ExamLevel.SENIOR
+        }
+        
         defaultChapter = defaultChapterStr  // 新增：设置默认章节
         
         // 恢复用户选择状态
@@ -62,39 +70,110 @@ class UserIdentityService : PersistentStateComponent<Element> {
     fun setSelectedExamType(examType: ExamType) {
         this.selectedExamType = examType
         // 同时更新级别
-        this.selectedLevel = when (examType) {
-            ExamType.SYSTEM_ANALYST -> "软考高级"
-            ExamType.SYSTEM_ARCHITECT -> "软考高级"
-            ExamType.NETWORK_PLANNER -> "软考高级"
-            ExamType.PROJECT_MANAGER -> "软考高级"
-            ExamType.SYSTEM_PLANNING_MANAGER -> "软考高级"
-            
-            ExamType.SYSTEM_INTEGRATION_ENGINEER -> "软考中级"
-            ExamType.NETWORK_ENGINEER -> "软考中级"
-            ExamType.INFORMATION_SYSTEM_MANAGEMENT_ENGINEER -> "软考中级"
-            ExamType.SOFTWARE_TESTER -> "软考中级"
-            ExamType.DATABASE_ENGINEER -> "软考中级"
-            ExamType.MULTIMEDIA_DESIGNER -> "软考中级"
-            ExamType.SOFTWARE_DESIGNER -> "软考中级"
-            ExamType.INFORMATION_SYSTEM_SUPERVISOR -> "软考中级"
-            ExamType.E_COMMERCE_DESIGNER -> "软考中级"
-            ExamType.INFORMATION_SECURITY_ENGINEER -> "软考中级"
-            ExamType.EMBEDDED_SYSTEM_DESIGNER -> "软考中级"
-            ExamType.SOFTWARE_PROCESS_EVALUATOR -> "软考中级"
-            ExamType.COMPUTER_AIDED_DESIGNER -> "软考中级"
-            ExamType.COMPUTER_HARDWARE_ENGINEER -> "软考中级"
-            ExamType.INFORMATION_TECHNOLOGY_SUPPORT_ENGINEER -> "软考中级"
-            
-            ExamType.PROGRAMMER -> "软考初级"
-            ExamType.NETWORK_ADMINISTRATOR -> "软考初级"
-            ExamType.INFORMATION_PROCESSING_TECHNICIAN -> "软考初级"
-            ExamType.INFORMATION_SYSTEM_OPERATION_MANAGER -> "软考初级"
-            ExamType.MULTIMEDIA_APPLICATION_DESIGNER -> "软考初级"
-            ExamType.E_COMMERCE_TECHNICIAN -> "软考初级"
-            ExamType.WEB_DESIGNER -> "软考初级"
-        }
+        this.selectedLevel = getLevelForExamType(examType)
         // 根据考试类型设置默认章节
-        this.defaultChapter = when (examType) {
+        this.defaultChapter = getDefaultChapterForExamType(examType)
+        // 标记用户已做出选择
+        this.hasUserMadeSelection = true
+    }
+    
+    /**
+     * 设置用户选择的考试级别
+     */
+    fun setSelectedLevel(level: ExamLevel) {
+        this.selectedLevel = level
+        // 根据级别设置默认考试类型
+        this.selectedExamType = getDefaultExamTypeForLevel(level)
+        // 根据考试类型设置默认章节
+        this.defaultChapter = getDefaultChapterForExamType(selectedExamType)
+        // 标记用户已做出选择
+        this.hasUserMadeSelection = true
+    }
+    
+    /**
+     * 获取用户选择的考试类型
+     */
+    fun getSelectedExamType(): ExamType {
+        return selectedExamType
+    }
+    
+    /**
+     * 获取用户选择的级别
+     */
+    fun getSelectedLevel(): ExamLevel {
+        return selectedLevel
+    }
+    
+    /**
+     * 获取默认章节
+     */
+    fun getDefaultChapter(): String {
+        return defaultChapter
+    }
+    
+    /**
+     * 检查是否已选择身份
+     */
+    fun isIdentitySelected(): Boolean {
+        return hasUserMadeSelection
+    }
+    
+    /**
+     * 根据考试类型获取对应的考试级别
+     */
+    private fun getLevelForExamType(examType: ExamType): ExamLevel {
+        return when (examType) {
+            // 软考高级
+            ExamType.SYSTEM_ANALYST,
+            ExamType.SYSTEM_ARCHITECT,
+            ExamType.NETWORK_PLANNER,
+            ExamType.PROJECT_MANAGER,
+            ExamType.SYSTEM_PLANNING_MANAGER -> ExamLevel.SENIOR
+            
+            // 软考中级
+            ExamType.SYSTEM_INTEGRATION_ENGINEER,
+            ExamType.NETWORK_ENGINEER,
+            ExamType.INFORMATION_SYSTEM_MANAGEMENT_ENGINEER,
+            ExamType.SOFTWARE_TESTER,
+            ExamType.DATABASE_ENGINEER,
+            ExamType.MULTIMEDIA_DESIGNER,
+            ExamType.SOFTWARE_DESIGNER,
+            ExamType.INFORMATION_SYSTEM_SUPERVISOR,
+            ExamType.E_COMMERCE_DESIGNER,
+            ExamType.INFORMATION_SECURITY_ENGINEER,
+            ExamType.EMBEDDED_SYSTEM_DESIGNER,
+            ExamType.SOFTWARE_PROCESS_EVALUATOR,
+            ExamType.COMPUTER_AIDED_DESIGNER,
+            ExamType.COMPUTER_HARDWARE_ENGINEER,
+            ExamType.INFORMATION_TECHNOLOGY_SUPPORT_ENGINEER -> ExamLevel.INTERMEDIATE
+            
+            // 软考初级
+            ExamType.PROGRAMMER,
+            ExamType.NETWORK_ADMINISTRATOR,
+            ExamType.INFORMATION_PROCESSING_TECHNICIAN,
+            ExamType.INFORMATION_SYSTEM_OPERATION_MANAGER,
+            ExamType.MULTIMEDIA_APPLICATION_DESIGNER,
+            ExamType.E_COMMERCE_TECHNICIAN,
+            ExamType.WEB_DESIGNER -> ExamLevel.JUNIOR
+        }
+    }
+    
+    /**
+     * 根据考试级别获取默认的考试类型
+     */
+    fun getDefaultExamTypeForLevel(level: ExamLevel): ExamType {
+        return when (level) {
+            ExamLevel.SENIOR -> ExamType.PROJECT_MANAGER
+            ExamLevel.INTERMEDIATE -> ExamType.SOFTWARE_DESIGNER
+            ExamLevel.JUNIOR -> ExamType.PROGRAMMER
+        }
+    }
+    
+    /**
+     * 根据考试类型获取默认章节
+     */
+    private fun getDefaultChapterForExamType(examType: ExamType): String {
+        return when (examType) {
             ExamType.SYSTEM_ANALYST -> "系统分析知识域"
             ExamType.SYSTEM_ARCHITECT -> "系统架构知识域"
             ExamType.NETWORK_PLANNER -> "网络规划知识域"
@@ -125,35 +204,46 @@ class UserIdentityService : PersistentStateComponent<Element> {
             ExamType.E_COMMERCE_TECHNICIAN -> "电子商务技术员知识域"
             ExamType.WEB_DESIGNER -> "网页设计知识域"
         }
-        // 标记用户已做出选择
-        this.hasUserMadeSelection = true
     }
     
     /**
-     * 获取用户选择的考试类型
+     * 获取指定级别的所有考试类型
      */
-    fun getSelectedExamType(): ExamType {
-        return selectedExamType
-    }
-    
-    /**
-     * 获取用户选择的级别
-     */
-    fun getSelectedLevel(): String {
-        return selectedLevel
-    }
-    
-    /**
-     * 获取默认章节
-     */
-    fun getDefaultChapter(): String {
-        return defaultChapter
-    }
-    
-    /**
-     * 检查是否已选择身份
-     */
-    fun isIdentitySelected(): Boolean {
-        return hasUserMadeSelection
+    fun getExamTypesForLevel(level: ExamLevel): List<ExamType> {
+        return when (level) {
+            ExamLevel.SENIOR -> listOf(
+                ExamType.PROJECT_MANAGER,
+                ExamType.SYSTEM_ANALYST,
+                ExamType.SYSTEM_ARCHITECT,
+                ExamType.NETWORK_PLANNER,
+                ExamType.SYSTEM_PLANNING_MANAGER
+            )
+            ExamLevel.INTERMEDIATE -> listOf(
+                ExamType.SYSTEM_INTEGRATION_ENGINEER,
+                ExamType.NETWORK_ENGINEER,
+                ExamType.INFORMATION_SYSTEM_MANAGEMENT_ENGINEER,
+                ExamType.SOFTWARE_TESTER,
+                ExamType.DATABASE_ENGINEER,
+                ExamType.MULTIMEDIA_DESIGNER,
+                ExamType.SOFTWARE_DESIGNER,
+                ExamType.INFORMATION_SYSTEM_SUPERVISOR,
+                ExamType.E_COMMERCE_DESIGNER,
+                ExamType.INFORMATION_SECURITY_ENGINEER,
+                ExamType.EMBEDDED_SYSTEM_DESIGNER,
+                ExamType.SOFTWARE_PROCESS_EVALUATOR,
+                ExamType.COMPUTER_AIDED_DESIGNER,
+                ExamType.COMPUTER_HARDWARE_ENGINEER,
+                ExamType.INFORMATION_TECHNOLOGY_SUPPORT_ENGINEER
+            )
+            ExamLevel.JUNIOR -> listOf(
+                ExamType.PROGRAMMER,
+                ExamType.NETWORK_ADMINISTRATOR,
+                ExamType.INFORMATION_PROCESSING_TECHNICIAN,
+                ExamType.INFORMATION_SYSTEM_OPERATION_MANAGER,
+                ExamType.MULTIMEDIA_APPLICATION_DESIGNER,
+                ExamType.E_COMMERCE_TECHNICIAN,
+                ExamType.WEB_DESIGNER
+            )
+        }
     }
 }

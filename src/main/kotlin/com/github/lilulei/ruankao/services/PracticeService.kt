@@ -174,7 +174,7 @@ class PracticeService : PersistentStateComponent<Element> {
         val questionService = project.getService(QuestionService::class.java)
         val questions = when (sessionType) {
             PracticeType.RANDOM_PRACTICE -> questionService.getRandomQuestions(10)
-            PracticeType.SPECIAL_TOPIC -> questionService.getQuestionsByLevel(selectedLevel)
+            PracticeType.SPECIAL_TOPIC -> questionService.getQuestionsByLevel(selectedLevel.displayName)
             PracticeType.MOCK_EXAM -> questionService.getRandomQuestionsByDifficulty(com.github.lilulei.ruankao.model.DifficultyLevel.MEDIUM, 50)
             PracticeType.DAILY_PRACTICE -> questionService.getRandomQuestions(10)
             else -> questionService.getRandomQuestions(10) // 默认返回随机题目

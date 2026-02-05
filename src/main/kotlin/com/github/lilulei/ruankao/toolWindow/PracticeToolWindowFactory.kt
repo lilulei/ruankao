@@ -252,7 +252,7 @@ class PracticeToolWindowFactory : ToolWindowFactory {
         private fun showDailyPracticeDialog() {
             val settingsDialog = SettingsDialog()
             val dailyCount = settingsDialog.getDailyPracticeQuestionsCount()
-            val questions = questionService.getQuestionsByLevel(userIdentityService.getSelectedLevel()).take(dailyCount)
+            val questions = questionService.getQuestionsByLevel(userIdentityService.getSelectedLevel().displayName).take(dailyCount)
             startPractice(PracticeType.DAILY_PRACTICE, questions)
         }
 
@@ -327,11 +327,11 @@ class PracticeToolWindowFactory : ToolWindowFactory {
             // 从用户选择的级别获取对应的题目
             val selectedLevel = userIdentityService.getSelectedLevel()
             val selectedExamType = userIdentityService.getSelectedExamType().displayName
-            val questionsForLevel = questionService.getQuestionsByLevel(selectedLevel)
-            
+            val questionsForLevel = questionService.getQuestionsByLevel(selectedLevel.displayName)
+
             // 获取当前身份下的所有章节（用户自己添加的知识点章节）
-            val chaptersForIdentity = chapterService.getChapterNamesByIdentity(selectedLevel, selectedExamType)
-            
+            val chaptersForIdentity = chapterService.getChapterNamesByIdentity(selectedLevel.displayName, selectedExamType)
+
             if (chaptersForIdentity.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "当前身份暂无自定义章节，请先添加章节！", "提示", JOptionPane.INFORMATION_MESSAGE)
                 val chapterManagementDialog = ChapterManagementDialog(project)
@@ -368,7 +368,7 @@ class PracticeToolWindowFactory : ToolWindowFactory {
                         // 获取该级别和章节下的题目，使用设置中的题目数量
                         val settingsDialog = SettingsDialog()
                         val questionsCount = settingsDialog.getSpecialTopicQuestionsCount()
-                        val questions = questionService.getQuestionsByLevelAndChapter(selectedLevel, selectedTopic).take(questionsCount)
+                        val questions = questionService.getQuestionsByLevelAndChapter(selectedLevel.displayName, selectedTopic).take(questionsCount)
                         
                         startPractice(PracticeType.SPECIAL_TOPIC, questions)
                     }
@@ -412,7 +412,7 @@ class PracticeToolWindowFactory : ToolWindowFactory {
         private fun showRandomPracticeDialog() {
             // 基于用户选择的级别获取题目
             val selectedLevel = userIdentityService.getSelectedLevel()
-            val questionsForLevel = questionService.getQuestionsByLevel(selectedLevel)
+            val questionsForLevel = questionService.getQuestionsByLevel(selectedLevel.displayName)
             
             val options = arrayOf("简单", "中等", "困难", "所有难度")
             val selectedOption = JOptionPane.showInputDialog(

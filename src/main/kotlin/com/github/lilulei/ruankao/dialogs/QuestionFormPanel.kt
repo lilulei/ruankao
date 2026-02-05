@@ -1,6 +1,7 @@
 package com.github.lilulei.ruankao.dialogs
 
 import com.github.lilulei.ruankao.model.DifficultyLevel
+import com.github.lilulei.ruankao.model.ExamLevel
 import com.github.lilulei.ruankao.model.ExamType
 import com.github.lilulei.ruankao.model.Question
 import com.github.lilulei.ruankao.services.KnowledgeChapterService
@@ -30,7 +31,7 @@ class QuestionFormPanel(
     
     val levelLabel = JLabel().apply {
         text = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel()
+            userIdentityService.getSelectedLevel().displayName
         } else {
             "软考高级"
         }
@@ -79,6 +80,14 @@ class QuestionFormPanel(
             // 添加模式的默认值
             explanationArea.text = "在此处输入题目解析..."
             dateSpinner.value = java.util.Date()
+            // 设置默认的考试级别和类型
+            if (userIdentityService.isIdentitySelected()) {
+                levelLabel.text = userIdentityService.getSelectedLevel().displayName
+                examTypeLabel.text = userIdentityService.getSelectedExamType().displayName
+            } else {
+                levelLabel.text = "软考高级"
+                examTypeLabel.text = ExamType.PROJECT_MANAGER.displayName
+            }
         }
     }
     
@@ -86,9 +95,39 @@ class QuestionFormPanel(
         updateChapterComboBox()
     }
     
+    /**
+     * 获取当前考试级别的显示名称
+     */
+    private fun getCurrentLevelDisplayName(): String {
+        return if (userIdentityService.isIdentitySelected()) {
+            userIdentityService.getSelectedLevel().displayName
+        } else {
+            "软考高级"
+        }
+    }
+    
+    /**
+     * 获取当前考试类型的显示名称
+     */
+    private fun getCurrentExamTypeDisplayName(): String {
+        return if (userIdentityService.isIdentitySelected()) {
+            userIdentityService.getSelectedExamType().displayName
+        } else {
+            ExamType.PROJECT_MANAGER.displayName
+        }
+    }
+    
+    /**
+     * 更新考试级别和考试类型标签显示
+     */
+    private fun updateLevelAndExamTypeLabels() {
+        levelLabel.text = getCurrentLevelDisplayName()
+        examTypeLabel.text = getCurrentExamTypeDisplayName()
+    }
+    
     private fun updateChapterComboBox() {
         val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel()
+            userIdentityService.getSelectedLevel().displayName
         } else {
             "软考高级"
         }
@@ -605,7 +644,16 @@ class QuestionFormPanel(
         
         return QuestionFormData(
             title = title,
-            category = levelLabel.text,
+            category = if (userIdentityService.isIdentitySelected()) {
+                userIdentityService.getSelectedLevel().displayName
+            } else {
+                "软考高级"
+            },
+            examLevel = if (userIdentityService.isIdentitySelected()) {
+                userIdentityService.getSelectedLevel()
+            } else {
+                ExamLevel.SENIOR
+            },
             examType = if (userIdentityService.isIdentitySelected()) {
                 userIdentityService.getSelectedExamType()
             } else {
@@ -649,6 +697,7 @@ enum class FormMode {
 data class QuestionFormData(
     val title: String,
     val category: String,
+    val examLevel: ExamLevel,
     val examType: ExamType,
     val level: DifficultyLevel,
     val chapter: String,
