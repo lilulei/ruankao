@@ -34,12 +34,32 @@ interface LearningStatisticsChangeListener {
  */
 @State(name = "LearningStatisticsService", storages = [Storage("softexam_learning_statistics.xml")])
 @Service(Service.Level.PROJECT)
-class LearningStatisticsService : PersistentStateComponent<Element> {
+class LearningStatisticsService(private val project: Project) : PersistentStateComponent<Element> {
     private val logger = logger<LearningStatisticsService>()
 
+    private val userIdentityService = project.getService(UserIdentityService::class.java)
     private var statistics = LearningStatistics()
     private val dailyPracticeRecords = mutableMapOf<String, DailyPracticeRecord>() // key: date string in YYYY-MM-DD format
     private val listeners = mutableListOf<LearningStatisticsChangeListener>()
+    
+    init {
+        logger.info("=== 初始化学习统计服务 ===")
+        logger.info("注册身份变更监听器")
+        // 注册身份变更监听器
+        userIdentityService.addIdentityChangeListener(object : UserIdentityChangeListener {
+            override fun onIdentityChanged(newLevel: ExamLevel, newExamType: ExamType) {
+                logger.info("=== 学习统计服务收到身份变更通知 ===")
+                logger.info("新身份: ${'$'}{newLevel.displayName} - ${'$'}{newExamType.displayName}")
+                logger.info("切换前统计数据身份: ${'$'}{statistics.examLevel} - ${'$'}{statistics.examType}")
+                switchToIdentity(newLevel.displayName, newExamType.displayName)
+                logger.info("切换后统计数据身份: ${'$'}{statistics.examLevel} - ${'$'}{statistics.examType}")
+                logger.info("=== 学习统计身份切换完成 ===")
+            }
+        })
+        logger.info("学习统计服务初始化完成")
+        logger.info("当前统计数据身份: ${'$'}{statistics.examLevel} - ${'$'}{statistics.examType}")
+        logger.info("=========================")
+    }
 
     /**
      * 添加学习统计变更监听器
@@ -84,6 +104,14 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
         if (statistics.lastStudyDate != null) {
             statsElement.setAttribute("lastStudyDate", statistics.lastStudyDate.toString())
         }
+        
+        // 保存身份信息
+        if (statistics.examLevel != null) {
+            statsElement.setAttribute("examLevel", statistics.examLevel)
+        }
+        if (statistics.examType != null) {
+            statsElement.setAttribute("examType", statistics.examType)
+        }
 
         // 保存类别统计
         val categoryStatsElement = Element("categoryStats")
@@ -93,6 +121,12 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
             statElement.setAttribute("totalQuestions", stat.totalQuestions.toString())
             statElement.setAttribute("correctAnswers", stat.correctAnswers.toString())
             statElement.setAttribute("mastered", stat.mastered.toString())
+            if (stat.examLevel != null) {
+                statElement.setAttribute("examLevel", stat.examLevel)
+            }
+            if (stat.examType != null) {
+                statElement.setAttribute("examType", stat.examType)
+            }
             categoryStatsElement.addContent(statElement)
         }
         statsElement.addContent(categoryStatsElement)
@@ -139,6 +173,8 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
                 val studyTimeMinutes = statsElement.getAttributeValue("studyTimeMinutes")?.toIntOrNull() ?: 0
                 val dailyStreak = statsElement.getAttributeValue("dailyStreak")?.toIntOrNull() ?: 0
                 val lastStudyDate = statsElement.getAttributeValue("lastStudyDate")?.toLongOrNull()
+                val examLevel = statsElement.getAttributeValue("examLevel")
+                val examType = statsElement.getAttributeValue("examType")
 
                 val categoryStats = mutableMapOf<String, CategoryStat>()
                 val categoryStatsElement = statsElement.getChild("categoryStats")
@@ -147,12 +183,16 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
                     val totalQs = statElement.getAttributeValue("totalQuestions")?.toIntOrNull() ?: 0
                     val correctQs = statElement.getAttributeValue("correctAnswers")?.toIntOrNull() ?: 0
                     val mastered = statElement.getAttributeValue("mastered")?.toBooleanStrictOrNull() ?: false
+                    val statExamLevel = statElement.getAttributeValue("examLevel")
+                    val statExamType = statElement.getAttributeValue("examType")
 
                     categoryStats[categoryName] = CategoryStat(
                         categoryName = categoryName,
                         totalQuestions = totalQs,
                         correctAnswers = correctQs,
-                        mastered = mastered
+                        mastered = mastered,
+                        examLevel = statExamLevel,
+                        examType = statExamType
                     )
                 }
 
@@ -170,7 +210,9 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
                     dailyStreak = dailyStreak,
                     lastStudyDate = lastStudyDate,
                     categoryStats = categoryStats,
-                    achievements = achievements
+                    achievements = achievements,
+                    examLevel = examLevel,
+                    examType = examType
                 )
             }
 
@@ -205,6 +247,18 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
      */
     fun recordPracticeSession(session: PracticeSession) {
         val today = getCurrentDateString()
+        
+        // 获取当前用户身份信息
+        val currentLevel = if (userIdentityService.isIdentitySelected()) {
+            userIdentityService.getSelectedLevel().displayName
+        } else {
+            null
+        }
+        val currentExamType = if (userIdentityService.isIdentitySelected()) {
+            userIdentityService.getSelectedExamType().displayName
+        } else {
+            null
+        }
 
         // 更新总统计数据
         statistics = statistics.copy(
@@ -212,7 +266,9 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
             totalQuestions = statistics.totalQuestions + session.answers.size,
             correctAnswers = statistics.correctAnswers + session.answers.count { it.value.isCorrect },
             studyTimeMinutes = statistics.studyTimeMinutes + ((session.endTime ?: System.currentTimeMillis()) - session.startTime).toInt() / (1000 * 60),
-            lastStudyDate = System.currentTimeMillis()
+            lastStudyDate = System.currentTimeMillis(),
+            examLevel = currentLevel,
+            examType = currentExamType
         )
 
         // 更新或创建今日记录
@@ -235,17 +291,7 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
                 val questionService = project.getService(QuestionService::class.java)
                 val question = questionService.getQuestionById(questionId)
 
-                if (question != null) {
-                    val category = question.category
-                    val existingStat = statistics.categoryStats.getOrDefault(category, CategoryStat(category))
-
-                    statistics.categoryStats[category] = CategoryStat(
-                        categoryName = category,
-                        totalQuestions = existingStat.totalQuestions + 1,
-                        correctAnswers = if (answerRecord.isCorrect) existingStat.correctAnswers + 1 else existingStat.correctAnswers,
-                        mastered = (existingStat.correctAnswers + if (answerRecord.isCorrect) 1 else 0).toDouble() / (existingStat.totalQuestions + 1) >= 0.8
-                    )
-                }
+                // 分类统计功能已移除
             }
         }
 
@@ -374,14 +420,7 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
         return dailyPracticeRecords.getOrDefault(today, DailyPracticeRecord())
     }
 
-    /**
-     * 获取各分类的统计数据
-     *
-     * @return Map<String, CategoryStat>，键为分类名称，值为对应的分类统计信息
-     */
-    fun getCategoryStatistics(): Map<String, CategoryStat> {
-        return statistics.categoryStats.toMap()
-    }
+
 
     /**
      * 获取已获得的成就列表
@@ -399,6 +438,103 @@ class LearningStatisticsService : PersistentStateComponent<Element> {
      */
     fun getDailyRecords(): Map<String, DailyPracticeRecord> {
         return dailyPracticeRecords.toMap()
+    }
+
+    /**
+     * 清空所有学习统计数据
+     * 重置为初始状态
+     */
+    fun clearAllData() {
+        // 获取当前用户身份信息
+        val currentLevel = if (userIdentityService.isIdentitySelected()) {
+            userIdentityService.getSelectedLevel().displayName
+        } else {
+            null
+        }
+        val currentExamType = if (userIdentityService.isIdentitySelected()) {
+            userIdentityService.getSelectedExamType().displayName
+        } else {
+            null
+        }
+
+        statistics = LearningStatistics(
+            examLevel = currentLevel,
+            examType = currentExamType
+        )
+        dailyPracticeRecords.clear()
+        
+        // 通知监听器
+        notifyListeners()
+        
+        logger.info("学习统计数据已清空")
+    }
+
+    /**
+     * 切换到指定身份的学习统计数据
+     * 
+     * @param examLevel 考试级别
+     * @param examType 考试类型
+     */
+    fun switchToIdentity(examLevel: String, examType: String) {
+        // 更新当前统计数据的身份信息
+        statistics = statistics.copy(
+            examLevel = examLevel,
+            examType = examType
+        )
+        
+        // 通知监听器
+        notifyListeners()
+        
+        logger.info("学习统计已切换到身份: $examLevel - $examType")
+    }
+
+    /**
+     * 获取当前身份标识符
+     * 用于区分不同身份的数据
+     * 
+     * @return 身份标识符字符串，格式为 "examLevel_examType"
+     */
+    fun getCurrentIdentityKey(): String {
+        val examLevel = statistics.examLevel ?: "unknown_examLevel"
+        val examType = statistics.examType ?: "unknown_examType"
+        return "${'$'}{examLevel}_${'$'}{examType}"
+    }
+
+    /**
+     * 获取当前身份下的学习统计数据
+     * 
+     * @return 当前身份的学习统计数据
+     */
+    fun getStatisticsForCurrentIdentity(): LearningStatistics {
+        logger.info("=== 获取当前身份学习统计数据 ===")
+        val currentLevel = if (userIdentityService.isIdentitySelected()) {
+            userIdentityService.getSelectedLevel().displayName
+        } else {
+            "软考高级"
+        }
+        val currentExamType = if (userIdentityService.isIdentitySelected()) {
+            userIdentityService.getSelectedExamType().displayName
+        } else {
+            ExamType.PROJECT_MANAGER.displayName
+        }
+        
+        logger.info("当前用户身份: $currentLevel - $currentExamType")
+        logger.info("统计数据身份: ${statistics.examLevel} - ${statistics.examType}")
+        
+        // 如果当前统计数据的身份不匹配，则返回空统计数据
+        if (statistics.examLevel != currentLevel || statistics.examType != currentExamType) {
+            logger.info("身份不匹配，返回空统计数据")
+            val emptyStats = LearningStatistics(
+                examLevel = currentLevel,
+                examType = currentExamType
+            )
+            logger.info("=== 学习统计数据获取完成 ===")
+            return emptyStats
+        }
+        
+        logger.info("身份匹配，返回现有统计数据")
+        logger.info("=== 学习统计数据获取完成 ===")
+        return statistics
     }
 }
 

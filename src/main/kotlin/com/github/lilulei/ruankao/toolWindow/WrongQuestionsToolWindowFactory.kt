@@ -4,6 +4,11 @@ import com.github.lilulei.ruankao.model.WrongQuestionInfo
 import com.github.lilulei.ruankao.services.QuestionService
 import com.github.lilulei.ruankao.services.WrongQuestionChangeListener
 import com.github.lilulei.ruankao.services.WrongQuestionService
+import com.github.lilulei.ruankao.services.UserIdentityService
+import com.github.lilulei.ruankao.services.UserIdentityChangeListener
+import com.github.lilulei.ruankao.model.ExamLevel
+import com.github.lilulei.ruankao.model.ExamType
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -52,8 +57,10 @@ class WrongQuestionsToolWindowFactory : ToolWindowFactory {
      * @param project 当前项目实例
      */
     class WrongQuestionsToolWindow(toolWindow: ToolWindow, private val project: Project) {
+        private val logger = logger<WrongQuestionsToolWindow>()
         private val wrongQuestionService = project.getService(WrongQuestionService::class.java)
         private val questionService = project.getService(QuestionService::class.java)
+        private val userIdentityService = project.getService(UserIdentityService::class.java)
 
         private lateinit var table: JTable
         private lateinit var tableModel: WrongQuestionsTableModel
@@ -66,8 +73,20 @@ class WrongQuestionsToolWindowFactory : ToolWindowFactory {
         }
 
         init {
-            // 注册监听器
+            // 注册错题本变更监听器
             wrongQuestionService.addWrongQuestionListener(listener)
+            
+            // 注册身份变更监听器
+            userIdentityService.addIdentityChangeListener(object : UserIdentityChangeListener {
+                override fun onIdentityChanged(newLevel: ExamLevel, newExamType: ExamType) {
+                    logger.info("错题本工具窗口收到身份变更通知: ${'$'}{newLevel.displayName} - ${'$'}{newExamType.displayName}")
+                    SwingUtilities.invokeLater {
+                        logger.info("开始刷新错题本显示")
+                        refreshWrongQuestions()
+                        logger.info("错题本刷新完成")
+                    }
+                }
+            })
         }
 
         /**
@@ -112,8 +131,12 @@ class WrongQuestionsToolWindowFactory : ToolWindowFactory {
          * 刷新错题列表数据
          */
         fun refreshWrongQuestions() {
-            val wrongQuestions = wrongQuestionService.allWrongQuestions.values.toList()
+            logger.info("=== 开始刷新错题本显示 ===")
+            val wrongQuestions = wrongQuestionService.getWrongQuestionsForCurrentIdentity()
+            logger.info("获取到 ${wrongQuestions.size} 条错题数据")
             tableModel.updateData(wrongQuestions)
+            logger.info("表格数据更新完成")
+            logger.info("=== 错题本显示刷新完成 ===")
         }
     }
 

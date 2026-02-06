@@ -9,6 +9,8 @@ import com.github.lilulei.ruankao.services.PracticeService
 import com.github.lilulei.ruankao.services.QuestionService
 import com.github.lilulei.ruankao.services.UserIdentityService
 import com.github.lilulei.ruankao.services.KnowledgeChapterService
+import com.github.lilulei.ruankao.services.UserIdentityChangeListener
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -50,6 +52,7 @@ class PracticeToolWindowFactory : ToolWindowFactory {
      * @param project 当前项目实例
      */
     class PracticeToolWindow(toolWindow: ToolWindow, private val project: Project) {
+        private val logger = logger<PracticeToolWindow>()
         private val practiceService = project.getService(PracticeService::class.java)
         private val questionService = project.getService(QuestionService::class.java)
         private val statsService = project.getService(LearningStatisticsService::class.java)
@@ -105,6 +108,18 @@ class PracticeToolWindowFactory : ToolWindowFactory {
                                 // 更新标签文本
                                 currentIdentityLabel.text = getCurrentIdentityText()
                             }
+                        }
+                    }
+                })
+                
+                // 注册身份变更监听器，自动更新身份显示
+                userIdentityService.addIdentityChangeListener(object : UserIdentityChangeListener {
+                    override fun onIdentityChanged(newLevel: ExamLevel, newExamType: ExamType) {
+                        logger.info("练习工具窗口收到身份变更通知: ${'$'}{newLevel.displayName} - ${'$'}{newExamType.displayName}")
+                        SwingUtilities.invokeLater {
+                            val newText = getCurrentIdentityText()
+                            logger.info("更新身份显示为: $newText")
+                            currentIdentityLabel.text = newText
                         }
                     }
                 })
@@ -261,7 +276,10 @@ class PracticeToolWindowFactory : ToolWindowFactory {
          * @param label 要更新的JLabel组件
          */
         private fun updateStatsLabel(label: JLabel) {
-            val stats = statsService.getOverallStatistics()
+            logger.info("=== 开始更新学习统计显示 ===")
+            val stats = statsService.getStatisticsForCurrentIdentity()
+            logger.info("获取到统计数据: 练习次数=${stats.totalPractices}, 答题数=${stats.totalQuestions}")
+            
             val statsText = """
                 总练习次数: ${stats.totalPractices}
                 答题总数: ${stats.totalQuestions}
@@ -271,6 +289,8 @@ class PracticeToolWindowFactory : ToolWindowFactory {
             """.trimIndent()
 
             label.text = "<html>$statsText</html>"
+            logger.info("统计标签更新完成")
+            logger.info("=== 学习统计显示更新完成 ===")
         }
 
         /**

@@ -43,6 +43,8 @@ enum class PracticeType {
  * @property lastStudyDate 最后学习日期时间戳，可为空
  * @property categoryStats 各分类统计信息映射
  * @property achievements 获得的成就集合
+ * @property level 考试级别，用于身份绑定
+ * @property examType 考试类型，用于身份绑定
  */
 @Serializable
 data class LearningStatistics(
@@ -53,7 +55,9 @@ data class LearningStatistics(
     val dailyStreak: Int = 0,
     val lastStudyDate: Long? = null,
     val categoryStats: MutableMap<String, CategoryStat> = mutableMapOf(),
-    val achievements: MutableSet<String> = mutableSetOf()
+    val achievements: MutableSet<String> = mutableSetOf(),
+    val examLevel: String? = null,  // 考试级别
+    val examType: String? = null  // 考试类型
 )
 
 /**
@@ -62,11 +66,15 @@ data class LearningStatistics(
  * @property totalQuestions 该分类下总题目数量
  * @property correctAnswers 该分类下正确回答数量
  * @property mastered 是否已掌握该分类
+ * @property examLevel 考试级别，用于身份绑定
+ * @property examType 考试类型，用于身份绑定
  */
 @Serializable
 data class CategoryStat(
     val categoryName: String,
     val totalQuestions: Int = 0,
     val correctAnswers: Int = 0,
-    val mastered: Boolean = false
+    val mastered: Boolean = false,
+    val examLevel: String? = null,  // 考试级别
+    val examType: String? = null  // 考试类型
 )

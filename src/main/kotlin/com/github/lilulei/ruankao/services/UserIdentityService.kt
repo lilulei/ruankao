@@ -6,8 +6,21 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import org.jdom.Element
+
+/**
+ * 用户身份变更监听器接口
+ */
+interface UserIdentityChangeListener {
+    /**
+     * 当用户身份发生变更时调用
+     * @param newLevel 新的考试级别
+     * @param newExamType 新的考试类型
+     */
+    fun onIdentityChanged(newLevel: ExamLevel, newExamType: ExamType)
+}
 
 /**
  * 用户身份服务类
@@ -16,10 +29,11 @@ import org.jdom.Element
 @State(name = "UserIdentityService", storages = [Storage("user_identity.xml")])
 @Service(Service.Level.PROJECT)
 class UserIdentityService : PersistentStateComponent<Element> {
-    private var selectedExamType: ExamType = ExamType.PROJECT_MANAGER
-    private var selectedLevel: ExamLevel = ExamLevel.SENIOR
+    private var selectedExamType: ExamType = ExamType.SYSTEM_ARCHITECT
+    private var selectedExamLevel: ExamLevel = ExamLevel.SENIOR
     private var hasUserMadeSelection: Boolean = false
-    private var defaultChapter: String = "项目管理知识域"  // 新增：默认章节字段
+    private var defaultChapter: String = "计算机系统基础"  // 新增：默认章节字段
+    private val listeners = mutableListOf<UserIdentityChangeListener>()  // 身份变更监听器列表
     
     companion object {
         fun getInstance(project: Project): UserIdentityService {
@@ -30,7 +44,7 @@ class UserIdentityService : PersistentStateComponent<Element> {
     override fun getState(): Element {
         val element = Element("UserIdentityService")
         element.setAttribute("selectedExamType", selectedExamType.name)
-        element.setAttribute("selectedLevel", selectedLevel.name)
+        element.setAttribute("selectedExamLevel", selectedExamLevel.name)
         element.setAttribute("hasUserMadeSelection", hasUserMadeSelection.toString())
         element.setAttribute("defaultChapter", defaultChapter)  // 新增：保存默认章节
         return element
@@ -38,7 +52,7 @@ class UserIdentityService : PersistentStateComponent<Element> {
     
     override fun loadState(state: Element) {
         val examTypeStr = state.getAttributeValue("selectedExamType") ?: ExamType.PROJECT_MANAGER.name
-        val levelStr = state.getAttributeValue("selectedLevel") ?: ExamLevel.SENIOR.name
+        val levelStr = state.getAttributeValue("selectedExamLevel") ?: ExamLevel.SENIOR.name
         val hasUserMadeSelectionStr = state.getAttributeValue("hasUserMadeSelection") ?: "false"
         val defaultChapterStr = state.getAttributeValue("defaultChapter") ?: "项目管理知识域"  // 新增：加载默认章节
         
@@ -51,7 +65,7 @@ class UserIdentityService : PersistentStateComponent<Element> {
         }
         
         // 尝试通过名称匹配考试级别
-        selectedLevel = try {
+        selectedExamLevel = try {
             ExamLevel.valueOf(levelStr)
         } catch (e: IllegalArgumentException) {
             // 如果找不到对应的枚举值，使用默认值
@@ -65,29 +79,70 @@ class UserIdentityService : PersistentStateComponent<Element> {
     }
     
     /**
+     * 添加身份变更监听器
+     */
+    fun addIdentityChangeListener(listener: UserIdentityChangeListener) {
+        listeners.add(listener)
+    }
+    
+    /**
+     * 移除身份变更监听器
+     */
+    fun removeIdentityChangeListener(listener: UserIdentityChangeListener) {
+        listeners.remove(listener)
+    }
+    
+    /**
+     * 通知所有监听器身份已变更
+     */
+    private fun notifyIdentityChange() {
+        logger<UserIdentityService>().info("=== 开始身份变更通知 ===")
+        logger<UserIdentityService>().info("新身份: ${selectedExamLevel.displayName} - ${selectedExamType.displayName}")
+        logger<UserIdentityService>().info("监听器数量: ${listeners.size}")
+        
+        listeners.forEachIndexed { index, listener ->
+            try {
+                logger<UserIdentityService>().info("通知第 ${index + 1} 个监听器: ${listener.javaClass.simpleName}")
+                listener.onIdentityChanged(selectedExamLevel, selectedExamType)
+                logger<UserIdentityService>().info("第 ${index + 1} 个监听器通知完成")
+            } catch (e: Exception) {
+                logger<UserIdentityService>().error("通知监听器失败: ${listener.javaClass.simpleName}", e)
+            }
+        }
+        
+        logger<UserIdentityService>().info("=== 身份变更通知完成 ===")
+    }
+    
+    /**
      * 设置用户选择的考试类型
      */
     fun setSelectedExamType(examType: ExamType) {
         this.selectedExamType = examType
         // 同时更新级别
-        this.selectedLevel = getLevelForExamType(examType)
+        this.selectedExamLevel = getLevelForExamType(examType)
         // 根据考试类型设置默认章节
         this.defaultChapter = getDefaultChapterForExamType(examType)
         // 标记用户已做出选择
         this.hasUserMadeSelection = true
+        
+        // 通知监听器
+        notifyIdentityChange()
     }
     
     /**
      * 设置用户选择的考试级别
      */
     fun setSelectedLevel(level: ExamLevel) {
-        this.selectedLevel = level
+        this.selectedExamLevel = level
         // 根据级别设置默认考试类型
         this.selectedExamType = getDefaultExamTypeForLevel(level)
         // 根据考试类型设置默认章节
         this.defaultChapter = getDefaultChapterForExamType(selectedExamType)
         // 标记用户已做出选择
         this.hasUserMadeSelection = true
+        
+        // 通知监听器
+        notifyIdentityChange()
     }
     
     /**
@@ -101,7 +156,7 @@ class UserIdentityService : PersistentStateComponent<Element> {
      * 获取用户选择的级别
      */
     fun getSelectedLevel(): ExamLevel {
-        return selectedLevel
+        return selectedExamLevel
     }
     
     /**

@@ -70,5 +70,13 @@
             <add-to-group group-id="ToolsMenu" relative-to-action="Generate" anchor="after"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt A"/>
         </action>
+        
+        <action id="InitializeDataAction"
+                class="com.github.lilulei.ruankao.actions.InitializeDataAction"
+                text="Initialize Data"
+                description="Clear learning statistics and wrong question data">
+            <add-to-group group-id="ToolsMenu" relative-to-action="Generate" anchor="after"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt I"/>
+        </action>
     </actions>
 </idea-plugin>

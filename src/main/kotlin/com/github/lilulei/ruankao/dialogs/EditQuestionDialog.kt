@@ -23,7 +23,7 @@ class EditQuestionDialog(private val project: Project, private val originalQuest
     private fun populateQuestionData() {
         // 填充表单数据
         formPanel.titleField.text = originalQuestion.title
-        formPanel.levelLabel.text = originalQuestion.category
+        // category字段已移除
         formPanel.examTypeLabel.text = originalQuestion.examType.displayName
         formPanel.difficultyComboBox.selectedItem = originalQuestion.level.displayName
         formPanel.explanationArea.text = originalQuestion.explanation
@@ -71,7 +71,6 @@ class EditQuestionDialog(private val project: Project, private val originalQuest
 
         return originalQuestion.copy(
             title = formData.title,
-            category = formData.category,
             examType = formData.examType,
             level = formData.level,
             chapter = formData.chapter,

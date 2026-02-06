@@ -11,6 +11,8 @@ import kotlinx.serialization.Serializable
  * @property lastErrorTime 最后一次错误的时间戳，默认为当前系统时间
  * @property mastered 是否已掌握，默认为false
  * @property consecutiveCorrectCount 连续正确回答的次数，默认为0
+ * @property examLevel 考试级别，用于身份绑定
+ * @property examType 考试类型，用于身份绑定
  */
 @Serializable
 data class WrongQuestionInfo(
@@ -18,5 +20,7 @@ data class WrongQuestionInfo(
     val errorCount: Int = 1,
     val lastErrorTime: Long = System.currentTimeMillis(),
     val mastered: Boolean = false,
-    val consecutiveCorrectCount: Int = 0
+    val consecutiveCorrectCount: Int = 0,
+    val examLevel: String? = null,  // 考试级别
+    val examType: String? = null  // 考试类型
 )

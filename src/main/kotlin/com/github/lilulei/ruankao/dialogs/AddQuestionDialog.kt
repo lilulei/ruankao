@@ -39,7 +39,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
         val newQuestion = Question(
             id = generateQuestionId(),
             title = formData.title,
-            category = formData.category,
             examType = formData.examType,
             examLevel = formData.examLevel,
             level = formData.level,
@@ -67,7 +66,6 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
         return Question(
             id = generateQuestionId(),
             title = formData.title,
-            category = formData.category,
             examType = formData.examType,
             examLevel = formData.examLevel,
             level = formData.level,

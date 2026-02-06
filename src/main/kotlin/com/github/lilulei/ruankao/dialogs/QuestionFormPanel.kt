@@ -192,7 +192,7 @@ class QuestionFormPanel(
     
     private fun populateFormData(question: Question) {
         titleField.text = question.title
-        levelLabel.text = question.category
+        // category字段已移除
         examTypeLabel.text = question.examType.displayName
         
         // 设置章节
@@ -682,11 +682,7 @@ class QuestionFormPanel(
         
         return QuestionFormData(
             title = title,
-            category = if (userIdentityService.isIdentitySelected()) {
-                userIdentityService.getSelectedLevel().displayName
-            } else {
-                "软考高级"
-            },
+
             examLevel = if (userIdentityService.isIdentitySelected()) {
                 userIdentityService.getSelectedLevel()
             } else {
@@ -734,7 +730,7 @@ enum class FormMode {
  */
 data class QuestionFormData(
     val title: String,
-    val category: String,
+
     val examLevel: ExamLevel,
     val examType: ExamType,
     val level: DifficultyLevel,

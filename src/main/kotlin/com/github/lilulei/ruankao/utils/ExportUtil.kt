@@ -43,14 +43,7 @@ class ExportUtil {
             writer.println("学习时长(分钟),${overallStats.studyTimeMinutes}")
             writer.println("连续学习天数,${overallStats.dailyStreak}")
 
-            // 导出分类统计
-            writer.println("")
-            writer.println("分类统计:")
-            writer.println("分类,总题数,答对题数,掌握状态")
-            val categoryStats = statisticsService.getCategoryStatistics()
-            categoryStats.forEach { (category, stat) ->
-                writer.println("$category,${stat.totalQuestions},${stat.correctAnswers},${if (stat.mastered) "已掌握" else "未掌握"}")
-            }
+            // 分类统计功能已移除
 
             // 导出错题本数据
             writer.println("")
@@ -128,14 +121,7 @@ class ExportUtil {
             writer.println("学习时长(分钟),${overallStats.studyTimeMinutes}")
             writer.println("连续学习天数,${overallStats.dailyStreak}")
 
-            // 导出分类统计
-            writer.println("")
-            writer.println("分类统计:")
-            writer.println("分类,总题数,答对题数,掌握状态")
-            val categoryStats = statisticsService.getCategoryStatistics()
-            categoryStats.forEach { (category, stat) ->
-                writer.println("$category,${stat.totalQuestions},${stat.correctAnswers},${if (stat.mastered) "已掌握" else "未掌握"}")
-            }
+            // 分类统计功能已移除
 
             // 导出成就
             writer.println("")

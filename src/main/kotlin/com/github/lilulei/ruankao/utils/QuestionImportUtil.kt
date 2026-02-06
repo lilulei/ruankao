@@ -70,7 +70,7 @@ class QuestionImportUtil {
                     
                     val id = element.getAttribute("id")
                     val title = getElementText(element, "title")
-                    val category = getElementText(element, "category")
+                    // category字段已移除
                     val difficulty = getElementText(element, "difficulty")
                     val chapter = getElementText(element, "chapter") // 新增章节信息
                     
@@ -103,7 +103,7 @@ class QuestionImportUtil {
                     val question = Question(
                         id = id,
                         title = title,
-                        category = category,
+
                         chapter = if (chapter.isNotEmpty()) chapter else null, // 添加章节信息
                         level = when (difficulty.lowercase()) {
                             "easy", "简单" -> com.github.lilulei.ruankao.model.DifficultyLevel.EASY

@@ -43,15 +43,6 @@ class QuestionService : PersistentStateComponent<Element> {
     }
 
     /**
-     * 根据分类获取试题
-     * @param category 试题分类
-     * @return 该分类下的所有试题列表
-     */
-    fun getQuestionsByCategory(category: String): List<Question> {
-        return _questions.values.filter { it.category.equals(category, ignoreCase = true) }
-    }
-
-    /**
      * 根据难度获取试题
      * @param difficulty 难度等级
      * @return 该难度下的所有试题列表
@@ -76,21 +67,6 @@ class QuestionService : PersistentStateComponent<Element> {
      */
     fun getRandomQuestions(count: Int): List<Question> {
         val questions = _questions.values.toList()
-        return if (questions.size <= count) {
-            questions.shuffled()
-        } else {
-            questions.shuffled().take(count)
-        }
-    }
-
-    /**
-     * 获取指定分类的随机试题
-     * @param category 试题分类
-     * @param count 需要获取的试题数量
-     * @return 指定分类中随机选取的试题列表
-     */
-    fun getRandomQuestionsByCategory(category: String, count: Int): List<Question> {
-        val questions = getQuestionsByCategory(category)
         return if (questions.size <= count) {
             questions.shuffled()
         } else {
@@ -158,14 +134,6 @@ class QuestionService : PersistentStateComponent<Element> {
      */
     fun refreshQuestions() {
         logger.info("刷新试题列表，当前试题数量: ${_questions.size}")
-    }
-
-    /**
-     * 获取所有分类列表
-     * @return 所有试题分类的去重列表
-     */
-    fun getAllCategories(): List<String> {
-        return _questions.values.map { it.category }.distinct()
     }
 
     /**
@@ -239,15 +207,6 @@ class QuestionService : PersistentStateComponent<Element> {
     }
 
     /**
-     * 获取指定分类的试题数量
-     * @param category 试题分类
-     * @return 该分类下的试题数量
-     */
-    fun getQuestionCountByCategory(category: String): Int {
-        return getQuestionsByCategory(category).size
-    }
-
-    /**
      * 获取指定难度的试题数量
      * @param difficulty 难度等级
      * @return 该难度下的试题数量
@@ -304,7 +263,7 @@ class QuestionService : PersistentStateComponent<Element> {
             val questionElement = Element("question")
             questionElement.setAttribute("id", question.id)
             questionElement.setAttribute("title", question.title)
-            questionElement.setAttribute("category", question.category)
+
             questionElement.setAttribute("difficulty", question.level.displayName)
             questionElement.setAttribute("examType", question.examType.displayName)
             if (question.chapter != null) {
@@ -352,7 +311,7 @@ class QuestionService : PersistentStateComponent<Element> {
             state.getChildren("question").forEach { questionElement ->
                 val id = questionElement.getAttributeValue("id")
                 val title = questionElement.getAttributeValue("title") ?: ""
-                val category = questionElement.getAttributeValue("category") ?: "默认分类"
+
                 val difficultyName = questionElement.getAttributeValue("difficulty") ?: "中等"
                 val examTypeName = questionElement.getAttributeValue("examType") ?: "SOFTWARE_DESIGNER"
 
@@ -399,7 +358,7 @@ class QuestionService : PersistentStateComponent<Element> {
                 val question = Question(
                     id = id,
                     title = title,
-                    category = category,
+
                     level = difficulty,
                     examType = examType,
                     options = options,

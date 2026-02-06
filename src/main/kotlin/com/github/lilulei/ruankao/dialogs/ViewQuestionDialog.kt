@@ -23,7 +23,7 @@ class ViewQuestionDialog(private val project: Project, private val question: Que
     private fun populateQuestionData() {
         // 填充表单数据
         formPanel.titleField.text = question.title
-        formPanel.levelLabel.text = question.category
+        // category字段已移除
         formPanel.examTypeLabel.text = question.examType.displayName
         formPanel.difficultyComboBox.selectedItem = question.level.displayName
         formPanel.explanationArea.text = question.explanation

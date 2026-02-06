@@ -124,8 +124,7 @@ class KnowledgeChapterService : PersistentStateComponent<Element> {
         if (chapter != null) {
             // 检查该章节下是否已绑定试题
             val questionsInChapter = questionService.allQuestionsList.filter { 
-                it.chapter != null && it.chapter.equals(chapter.name, ignoreCase = true) &&
-                (chapter.level == null || it.category == chapter.level) 
+                it.chapter != null && it.chapter.equals(chapter.name, ignoreCase = true)
             }
             if (questionsInChapter.isNotEmpty()) {
                 logger.warn("章节 ${chapter.name} 下存在 ${questionsInChapter.size} 道试题，无法删除")

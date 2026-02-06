@@ -11,7 +11,6 @@ import java.time.LocalDate
  * @param correctAnswers 正确答案集合，支持多选题的多个答案
  * @param explanation 题目解析说明
  * @param level 题目难度等级，默认为中等难度
- * @param category 题目分类，默认为"通用"
  * @param year 考试年份，默认为0表示未指定年份
  * @param examType 考试类型，默认为系统架构设计师
  * @param examLevel 考试级别，支持软考高级/中级/初级，默认为软考高级
@@ -24,7 +23,6 @@ data class Question(
     val correctAnswers: Set<String>, // 多选题可能有多个答案
     val explanation: String = "",
     val level: DifficultyLevel = DifficultyLevel.MEDIUM,
-    val category: String = "通用",
     val chapter: String? = null, // 知识点章节
     val year: LocalDate = LocalDate.of(2025, 11, 8), // 考试年份
     val examType: ExamType = ExamType.SYSTEM_ARCHITECT, // 考试类型
