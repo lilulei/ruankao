@@ -151,7 +151,21 @@ class WrongQuestionService(private val project: Project) : PersistentStateCompon
      * 记录错误答案，将题目加入错题本或更新错误次数
      * @param questionId 题目ID
      */
+    /**
+     * 记录错误答案，将题目加入错题本或更新错误次数
+     * 
+     * @param questionId 题目ID，用于标识具体的错题
+     * 
+     * 该方法会：
+     * 1. 检查题目是否已在错题本中存在
+     * 2. 如果存在则错误次数加1，否则初始化为1
+     * 3. 获取当前用户的考试身份信息
+     * 4. 创建或更新错题信息记录
+     * 5. 通知所有监听器数据已更新
+     */
     fun recordWrongAnswer(questionId: String) {
+        // 本次错误信息打印调试
+        logger.info("记录错误答案: ${'$'}{questionId}")
         val currentInfo = _wrongQuestions[questionId]
         val newErrorCount = if (currentInfo != null) currentInfo.errorCount + 1 else 1
         
@@ -296,21 +310,17 @@ class WrongQuestionService(private val project: Project) : PersistentStateCompon
 
     /**
      * 切换到指定身份的错题本数据
+     * 注意：此方法不再更新错题记录的身份字段，而是通过过滤显示当前身份的数据
      * 
      * @param level 考试级别
      * @param examType 考试类型
      */
     fun switchToIdentity(examLevel: String, examType: String) {
-        // 更新所有错题信息的身份信息
-        _wrongQuestions.replaceAll { _, info ->
-            info.copy(
-                examLevel = examLevel,
-                examType = examType
-            )
-        }
+        // 不再更新错题记录的身份信息，保持每条记录的原始身份上下文
+        // 数据过滤由 getWrongQuestionsForCurrentIdentity() 方法处理
         
         notifyListeners()
-        logger.info("错题本已切换到身份: $examLevel - $examType")
+        logger.info("错题本身份切换完成: $examLevel - $examType (数据过滤模式)")
     }
 
     /**

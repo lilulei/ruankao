@@ -471,21 +471,20 @@ class LearningStatisticsService(private val project: Project) : PersistentStateC
 
     /**
      * 切换到指定身份的学习统计数据
+     * 注意：学习统计采用按需加载模式，不预先切换数据
+     * 数据过滤由 getStatisticsForCurrentIdentity() 方法处理
      * 
      * @param examLevel 考试级别
      * @param examType 考试类型
      */
     fun switchToIdentity(examLevel: String, examType: String) {
-        // 更新当前统计数据的身份信息
-        statistics = statistics.copy(
-            examLevel = examLevel,
-            examType = examType
-        )
+        // 学习统计不进行身份字段的批量更新
+        // 而是在 getStatisticsForCurrentIdentity() 中按需过滤和返回对应身份的数据
         
-        // 通知监听器
+        // 通知监听器刷新界面
         notifyListeners()
         
-        logger.info("学习统计已切换到身份: $examLevel - $examType")
+        logger.info("学习统计身份切换完成: $examLevel - $examType (按需加载模式)")
     }
 
     /**
