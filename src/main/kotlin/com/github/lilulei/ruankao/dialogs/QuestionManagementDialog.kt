@@ -8,10 +8,10 @@ import com.github.lilulei.ruankao.services.UserIdentityService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import java.awt.*
-import java.awt.event.ActionEvent
-import java.awt.event.ActionListener
+import java.awt.BasicStroke
 import javax.swing.*
 import javax.swing.table.AbstractTableModel
+import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableColumn
 
 /**
@@ -54,9 +54,44 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
         table.autoResizeMode = JTable.AUTO_RESIZE_ALL_COLUMNS
         
+        // 使用自定义复选框渲染器，确保选中状态持久化显示
+        val checkboxRenderer = CustomCheckboxRenderer(selectedQuestions)
+        table.setDefaultRenderer(Boolean::class.java, checkboxRenderer)
+        // 移除默认编辑器，避免与自定义点击处理冲突
+        table.setDefaultEditor(Boolean::class.java, null)
+        
+        // 添加鼠标点击事件处理，实现真正的选中/取消选中功能
+        table.addMouseListener(object : java.awt.event.MouseAdapter() {
+            override fun mousePressed(e: java.awt.event.MouseEvent) {
+                // 使用 mousePressed 而不是 mouseClicked，响应更快更稳定
+                val point = e.point
+                val row = table.rowAtPoint(point)
+                val column = table.columnAtPoint(point)
+                
+                // 只处理第一列（复选框列）的点击
+                if (column == 0 && row >= 0 && row < tableModel.rowCount) {
+                    val questionId = tableModel.getQuestionIdAt(row)
+                    if (questionId != null) {
+                        // 阻止事件继续传播，避免与其他事件处理器冲突
+                        e.consume()
+                        
+                        if (selectedQuestions.contains(questionId)) {
+                            // 已选中，取消选中
+                            selectedQuestions.remove(questionId)
+                        } else {
+                            // 未选中，选中
+                            selectedQuestions.add(questionId)
+                        }
+                        // 刷新表格显示
+                        tableModel.fireTableDataChanged()
+                    }
+                }
+            }
+        })
+        
         // 设置列宽
         val columnModel = table.columnModel
-        columnModel.getColumn(0).preferredWidth = 30   // 复选框
+        columnModel.getColumn(0).preferredWidth = 40   // 复选框（增加宽度让图标更明显）
         columnModel.getColumn(1).preferredWidth = 80   // ID
         columnModel.getColumn(2).preferredWidth = 100  // 考试级别
         columnModel.getColumn(3).preferredWidth = 150  // 考试类型
@@ -179,6 +214,10 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
     private fun createToolbarPanel(): JPanel {
         val panel = JPanel(FlowLayout(FlowLayout.LEFT))
         
+        // 批量操作按钮
+        val selectAllButton = JButton("全选")
+        val deselectAllButton = JButton("取消全选")
+        
         val refreshButton = JButton("刷新")
         val addButton = JButton("添加单个试题")
         val importButton = JButton("批量导入试题")
@@ -188,6 +227,17 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         val deleteButton = JButton("删除")
         val batchDeleteButton = JButton("批量删除")
         val viewButton = JButton("查看详情")
+
+        // 批量选择事件处理
+        selectAllButton.addActionListener {
+            selectedQuestions.addAll(filteredQuestionList.map { it.id })
+            tableModel.fireTableDataChanged()
+        }
+        
+        deselectAllButton.addActionListener {
+            selectedQuestions.clear()
+            tableModel.fireTableDataChanged()
+        }
 
         refreshButton.addActionListener { refreshQuestionList() }
         addButton.addActionListener { addNewQuestion() }
@@ -199,6 +249,11 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         batchDeleteButton.addActionListener { batchDeleteQuestions() }
         viewButton.addActionListener { viewSelectedQuestion() }
 
+        // 添加批量操作按钮
+        panel.add(selectAllButton)
+        panel.add(deselectAllButton)
+        panel.add(Box.createHorizontalStrut(10))
+        
         panel.add(refreshButton)
         panel.add(addButton)
         panel.add(importButton)
@@ -237,6 +292,10 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         }
         
         filteredQuestionList.addAll(tempList)
+        
+        // 清理selectedQuestions中不在当前筛选结果中的项
+        selectedQuestions.retainAll(filteredQuestionList.map { it.id })
+        
         // 只有在tableModel已初始化的情况下才更新表格
         if (::tableModel.isInitialized) {
             tableModel.fireTableDataChanged()
@@ -253,6 +312,8 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
     private fun refreshQuestionList() {
         questionList.clear()
         questionList.addAll(questionService.allQuestionsList.sortedBy { it.id })
+        // 刷新时清空选中状态
+        selectedQuestions.clear()
         applyFilters() // 重新应用筛选
     }
 
@@ -426,7 +487,7 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         val dialog = ChapterManagementDialog(project)
         dialog.show()
     }
-
+    
     /**
      * 更新考试类型下拉框（根据选中的考试级别）
      */
@@ -510,7 +571,7 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         
         override fun getColumnClass(columnIndex: Int): Class<*> {
             return when (columnIndex) {
-                0 -> Boolean::class.java // 复选框列
+                0 -> Boolean::class.javaPrimitiveType ?: Boolean::class.java
                 else -> String::class.java
             }
         }
@@ -520,9 +581,10 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         }
 
         override fun getValueAt(row: Int, column: Int): Any? {
+            if (row < 0 || row >= questions.size) return null
             val question = questions[row]
             return when (column) {
-                0 -> selectedQuestions.contains(question.id) // 复选框状态
+                0 -> null // 返回null，避免显示true/false文本
                 1 -> question.id
                 2 -> question.examLevel.displayName
                 3 -> question.examType.displayName
@@ -543,6 +605,110 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
                     selectedQuestions.remove(question.id)
                 }
                 fireTableCellUpdated(row, column)
+            }
+        }
+        
+        /**
+         * 获取指定行的题目ID
+         */
+        fun getQuestionIdAt(row: Int): String? {
+            return if (row >= 0 && row < questions.size) {
+                questions[row].id
+            } else {
+                null
+            }
+        }
+    }
+    
+    /**
+     * 自定义复选框渲染器：显示矩形中间加对号的图标样式
+     */
+    private class CustomCheckboxRenderer(
+        private val selectedQuestions: MutableSet<String>
+    ) : DefaultTableCellRenderer() {
+        override fun getTableCellRendererComponent(
+            table: JTable?,
+            value: Any?,
+            isSelected: Boolean,
+            hasFocus: Boolean,
+            row: Int,
+            column: Int
+        ): Component {
+            val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
+            
+            // 将组件转换为 JLabel 类型
+            if (component is JLabel) {
+                // 设置背景透明
+                component.isOpaque = false
+                
+                // 关键修复：直接检查 selectedQuestions 集合获取真实选中状态
+                val questionId = table?.model?.let { model ->
+                    if (model is QuestionTableModel && row >= 0) {
+                        model.getQuestionIdAt(row)
+                    } else {
+                        null
+                    }
+                }
+                val isSelectedNow = questionId != null && selectedQuestions.contains(questionId)
+                
+                // 如果是复选框列（第0列）
+                if (column == 0) {
+                    component.text = ""
+                    if (isSelectedNow) {
+                        // 选中状态：显示对号图标
+                        component.icon = CheckIcon(true)
+                        // 添加浅蓝色背景
+                        component.background = Color(230, 240, 255)
+                        component.isOpaque = true
+                    } else {
+                        // 未选中状态：显示空矩形框
+                        component.icon = CheckIcon(false)
+                        // 添加浅灰色背景使其更可见
+                        component.background = Color(245, 245, 245)
+                        component.isOpaque = true
+                    }
+                } else {
+                    // 其他列显示默认内容
+                    component.text = value?.toString() ?: ""
+                    component.icon = null
+                    component.background = Color.WHITE
+                    component.isOpaque = false
+                }
+            }
+            
+            return component
+        }
+    }
+
+    /**
+     * 对号图标类 - 支持选中和未选中两种状态
+     */
+    private class CheckIcon(private val isChecked: Boolean) : Icon {
+        private val size = 16
+        
+        override fun getIconWidth(): Int = size
+        
+        override fun getIconHeight(): Int = size
+        
+        override fun paintIcon(c: Component?, g: Graphics?, x: Int, y: Int) {
+            g?.let { graphics ->
+                // 绘制矩形边框 - 使用深灰色，更清晰可见
+                graphics.color = Color(80, 80, 80)  // 深灰色边框
+                graphics.drawRect(x, y, size - 1, size - 1)
+                
+                // 如果是选中状态，绘制对号
+                if (isChecked) {
+                    // 绘制对号 - 使用深蓝色，确保清晰
+                    graphics.color = Color(0, 100, 200)  // 深蓝色对号
+                    if (graphics is Graphics2D) {
+                        graphics.stroke = BasicStroke(2.0f)
+                    }
+                    
+                    // 对号的两条线
+                    graphics.drawLine(x + 4, y + 8, x + 7, y + 12)
+                    graphics.drawLine(x + 7, y + 12, x + 12, y + 4)
+                }
+                // 未选中状态只绘制矩形框，不绘制对号
             }
         }
     }
