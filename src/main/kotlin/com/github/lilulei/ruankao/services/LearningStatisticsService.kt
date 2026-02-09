@@ -250,7 +250,7 @@ class LearningStatisticsService(private val project: Project) : PersistentStateC
         
         // 获取当前用户身份信息
         val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             null
         }
@@ -447,7 +447,7 @@ class LearningStatisticsService(private val project: Project) : PersistentStateC
     fun clearAllData() {
         // 获取当前用户身份信息
         val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             null
         }
@@ -507,7 +507,7 @@ class LearningStatisticsService(private val project: Project) : PersistentStateC
     fun getStatisticsForCurrentIdentity(): LearningStatistics {
         logger.info("=== 获取当前身份学习统计数据 ===")
         val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             "软考高级"
         }

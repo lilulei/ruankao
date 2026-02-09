@@ -155,7 +155,7 @@ class UserIdentityService : PersistentStateComponent<Element> {
     /**
      * 获取用户选择的级别
      */
-    fun getSelectedLevel(): ExamLevel {
+    fun getSelectedExamLevel(): ExamLevel {
         return selectedExamLevel
     }
     

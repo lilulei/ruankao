@@ -97,7 +97,7 @@ class ChapterManagementDialog(private val project: Project) : DialogWrapper(true
     private fun updateChapterList() {
         chapterListModel.clear()
         val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             "软考高级"  // 默认级别
         }
@@ -115,7 +115,7 @@ class ChapterManagementDialog(private val project: Project) : DialogWrapper(true
 
     private fun handleAddChapter() {
         val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             "软考高级"  // 默认级别
         }

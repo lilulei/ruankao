@@ -113,7 +113,7 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
             }
         }
         // 设置初始选中项为用户当前选择的级别
-        identityLevelComboBox.selectedItem = userIdentityService.getSelectedLevel()
+        identityLevelComboBox.selectedItem = userIdentityService.getSelectedExamLevel()
         identityLevelComboBox.addActionListener {
             updateExamTypeComboBox()
             // 只有在初始化完成后才应用筛选
@@ -167,7 +167,7 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         // 重置筛选按钮
         val resetButton = JButton("重置选择")
         resetButton.addActionListener {
-            identityLevelComboBox.selectedItem = userIdentityService.getSelectedLevel()
+            identityLevelComboBox.selectedItem = userIdentityService.getSelectedExamLevel()
             updateExamTypeComboBox()
             applyFilters()
         }
@@ -245,7 +245,7 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
 
     private fun resetFilters() {
         searchField.text = ""
-        identityLevelComboBox.selectedItem = userIdentityService.getSelectedLevel()
+        identityLevelComboBox.selectedItem = userIdentityService.getSelectedExamLevel()
         updateExamTypeComboBox()
         applyFilters()
     }

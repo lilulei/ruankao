@@ -171,7 +171,7 @@ class WrongQuestionService(private val project: Project) : PersistentStateCompon
         
         // 获取当前用户身份信息
         val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             null
         }
@@ -250,7 +250,7 @@ class WrongQuestionService(private val project: Project) : PersistentStateCompon
     fun getWrongQuestionsForCurrentIdentity(): List<WrongQuestionInfo> {
         logger.info("=== 获取当前身份错题数据 ===")
         val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             "软考高级"
         }

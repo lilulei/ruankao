@@ -1,6 +1,7 @@
 package com.github.lilulei.ruankao.services
 
 import com.github.lilulei.ruankao.model.*
+import com.github.lilulei.ruankao.services.*
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.components.PersistentStateComponent
@@ -169,12 +170,13 @@ class PracticeService : PersistentStateComponent<Element> {
      */
     fun startNewSessionWithUserLevel(sessionType: PracticeType, project: Project): PracticeSession {
         val userIdentityService = project.getService(UserIdentityService::class.java)
-        val selectedLevel = userIdentityService.getSelectedLevel()
+        val selectedLevel = userIdentityService.getSelectedExamLevel()
+        val selectedExamType = userIdentityService.getSelectedExamType()
         
         val questionService = project.getService(QuestionService::class.java)
         val questions = when (sessionType) {
             PracticeType.RANDOM_PRACTICE -> questionService.getRandomQuestions(10)
-            PracticeType.SPECIAL_TOPIC -> questionService.getQuestionsByLevel(selectedLevel.displayName)
+            PracticeType.SPECIAL_TOPIC -> questionService.getQuestionsByIdentity(selectedLevel.displayName, selectedExamType.displayName)
             PracticeType.MOCK_EXAM -> questionService.getRandomQuestionsByDifficulty(com.github.lilulei.ruankao.model.DifficultyLevel.MEDIUM, 50)
             PracticeType.DAILY_PRACTICE -> questionService.getRandomQuestions(10)
             else -> questionService.getRandomQuestions(10) // 默认返回随机题目

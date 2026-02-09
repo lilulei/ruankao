@@ -25,7 +25,7 @@ class EditQuestionDialog(private val project: Project, private val originalQuest
         formPanel.titleField.text = originalQuestion.title
         // category字段已移除
         formPanel.examTypeLabel.text = originalQuestion.examType.displayName
-        formPanel.difficultyComboBox.selectedItem = originalQuestion.level.displayName
+        formPanel.levelComboBox.selectedItem = originalQuestion.level.displayName
         formPanel.explanationArea.text = originalQuestion.explanation
 
         // 设置章节

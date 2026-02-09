@@ -151,7 +151,7 @@ class UserIdentityDialog : DialogWrapper(true) {
     /**
      * 获取用户选择的级别
      */
-    fun getSelectedLevel(): String {
+    fun getSelectedExamLevel(): String {
         return levelComboBox.selectedItem as String
     }
 }

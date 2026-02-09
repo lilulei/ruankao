@@ -151,7 +151,7 @@ class DataInitializationDialog(private val project: Project) : DialogWrapper(tru
         val userIdentityService = project.getService(com.github.lilulei.ruankao.services.UserIdentityService::class.java)
         return if (userIdentityService.isIdentitySelected()) {
             val examType = userIdentityService.getSelectedExamType()
-            val level = userIdentityService.getSelectedLevel()
+            val level = userIdentityService.getSelectedExamLevel()
             "${level.displayName} - ${examType.displayName}"
         } else {
             "未选择身份"

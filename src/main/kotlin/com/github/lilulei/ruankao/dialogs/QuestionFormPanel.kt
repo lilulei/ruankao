@@ -48,7 +48,7 @@ class QuestionFormPanel(
     
     val levelLabel = JLabel().apply {
         text = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             "软考高级"
         }
@@ -69,7 +69,7 @@ class QuestionFormPanel(
         toolTipText = "请选择当前身份维护的知识点章节"
     }
     
-    val difficultyComboBox = ComboBox<String>(arrayOf("简单", "中等", "困难")).apply {
+    val levelComboBox = ComboBox<String>(arrayOf("简单", "中等", "困难")).apply {
         selectedItem = "中等"
         toolTipText = "选择题目难度"
     }
@@ -116,7 +116,7 @@ class QuestionFormPanel(
             dateSpinner.value = java.util.Date()
             // 设置默认的考试级别和类型
             if (userIdentityService.isIdentitySelected()) {
-                levelLabel.text = userIdentityService.getSelectedLevel().displayName
+                levelLabel.text = userIdentityService.getSelectedExamLevel().displayName
                 examTypeLabel.text = userIdentityService.getSelectedExamType().displayName
             } else {
                 levelLabel.text = "软考高级"
@@ -134,7 +134,7 @@ class QuestionFormPanel(
      */
     private fun getCurrentLevelDisplayName(): String {
         return if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             "软考高级"
         }
@@ -161,7 +161,7 @@ class QuestionFormPanel(
     
     private fun updateChapterComboBox() {
         val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedLevel().displayName
+            userIdentityService.getSelectedExamLevel().displayName
         } else {
             "软考高级"
         }
@@ -209,7 +209,7 @@ class QuestionFormPanel(
         }
         
         // 设置难度
-        difficultyComboBox.selectedItem = question.level.displayName
+        levelComboBox.selectedItem = question.level.displayName
         
         // 设置解析
         explanationArea.text = question.explanation
@@ -235,14 +235,14 @@ class QuestionFormPanel(
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
         gbc.anchor = GridBagConstraints.WEST
-        val levelPanel = JLabel("考试级别").apply {
+        val examLevelPanel = JLabel("考试级别").apply {
             foreground = Color.WHITE
             text = "考试级别*"
             // 单独给星号设置红色
             val styledText = "<html>考试级别<span style='color:red;'>*</span></html>"
             text = styledText
         }
-        panel.add(levelPanel, gbc)
+        panel.add(examLevelPanel, gbc)
 
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
@@ -317,12 +317,12 @@ class QuestionFormPanel(
             val styledText = "<html>难度<span style='color:red;'>*</span></html>"
             text = styledText
         }
-        panel.add(difficultyPanel, gbc)
+        panel.add(examLevelPanel, gbc)
 
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
-        panel.add(difficultyComboBox, gbc)
+        panel.add(levelComboBox, gbc)
 
         // 日期选择
         gbc.gridx = 0
@@ -673,7 +673,7 @@ class QuestionFormPanel(
             LocalDate.now()
         }
         
-        val difficulty = when (difficultyComboBox.selectedItem as String) {
+        val difficulty = when (levelComboBox.selectedItem as String) {
             "简单" -> DifficultyLevel.EASY
             "中等" -> DifficultyLevel.MEDIUM
             "困难" -> DifficultyLevel.HARD
@@ -684,7 +684,7 @@ class QuestionFormPanel(
             title = title,
 
             examLevel = if (userIdentityService.isIdentitySelected()) {
-                userIdentityService.getSelectedLevel()
+                userIdentityService.getSelectedExamLevel()
             } else {
                 ExamLevel.SENIOR
             },
@@ -705,7 +705,7 @@ class QuestionFormPanel(
     fun setViewMode() {
         titleField.isEditable = false
         chapterComboBox.isEnabled = false
-        difficultyComboBox.isEnabled = false
+        levelComboBox.isEnabled = false
         explanationArea.isEditable = false
         dateSpinner.isEnabled = false
         
