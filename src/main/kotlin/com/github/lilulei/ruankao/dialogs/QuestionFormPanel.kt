@@ -246,7 +246,7 @@ class QuestionFormPanel(
 
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
-        gbc.weightx = 1.0
+        gbc.weightx = 0.0
         panel.add(levelLabel, gbc)
 
         // 考试类型
@@ -317,7 +317,7 @@ class QuestionFormPanel(
             val styledText = "<html>难度<span style='color:red;'>*</span></html>"
             text = styledText
         }
-        panel.add(examLevelPanel, gbc)
+        panel.add(difficultyPanel, gbc)
 
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
