@@ -1,13 +1,18 @@
 package com.github.lilulei.ruankao.services
 
 import com.github.lilulei.ruankao.model.*
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.util.ModificationTracker
 import org.jdom.Element
 import java.time.LocalDate
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * 试题服务类，负责管理软考试题
@@ -17,10 +22,17 @@ import java.time.LocalDate
  */
 @State(name = "QuestionService", storages = [Storage("softexam_questions.xml")])
 @Service(Service.Level.PROJECT)
-class QuestionService : PersistentStateComponent<Element> {
+class QuestionService(private val project: Project) : PersistentStateComponent<Element>, ModificationTracker {
     private val logger = logger<QuestionService>()
     private val _questions = mutableMapOf<String, Question>()
-    
+    private val modificationCount = AtomicLong(0)
+
+    companion object {
+        fun getInstance(project: Project): QuestionService {
+            return project.getService(QuestionService::class.java)
+        }
+    }
+
     init {
         logger.info("=== 初始化试题服务 ===")
         logger.info("试题存储文件: softexam_questions.xml")
@@ -102,10 +114,14 @@ class QuestionService : PersistentStateComponent<Element> {
      */
     fun addQuestion(question: Question) {
         _questions[question.id] = question
+        modificationCount.incrementAndGet() // 立即标记为已修改
         logger.info("添加试题: ${question.id}")
         logger.info("试题详情: 标题='${question.title}', 难度=${question.level.displayName}, 类型=${question.examType.displayName}")
         logger.info("添加后试题总数: ${_questions.size}")
-        
+
+        // 触发立即保存
+        forceSave()
+
         // 记录数据变更以便追踪
         logDataConsistencyStatus("添加试题后")
     }
@@ -117,11 +133,14 @@ class QuestionService : PersistentStateComponent<Element> {
     fun removeQuestion(id: String) {
         val removed = _questions.remove(id)
         if (removed != null) {
+            modificationCount.incrementAndGet() // 立即标记为已修改
             logger.info("删除试题: $id")
             logger.info("删除后试题总数: ${_questions.size}")
-            // IntelliJ的PersistentStateComponent会自动处理持久化
-            // 删除后确保界面刷新即可
+
+            // 触发立即保存
             forceSave()
+
+            logDataConsistencyStatus("删除试题后")
         } else {
             logger.warn("尝试删除不存在的试题: $id")
         }
@@ -177,17 +196,28 @@ class QuestionService : PersistentStateComponent<Element> {
     
     /**
      * 强制触发持久化保存
-     * 通过标记服务状态为脏来触发IntelliJ平台自动保存
+     * 通过StateStore显式保存组件状态
      */
     private fun forceSave() {
         try {
-            // 获取当前项目
-            val project = com.intellij.openapi.project.ProjectManager.getInstance().openProjects.firstOrNull()
-            if (project != null) {
-                // 重新获取服务实例，IntelliJ平台会自动检测状态变化并保存
-                val service = project.getService(QuestionService::class.java)
-                logger.info("标记试题服务状态为需要保存")
-                // IntelliJ平台会自动调用getState()方法进行持久化
+            // 增加修改计数器
+            modificationCount.incrementAndGet()
+
+            // 使用invokeLater在UI线程空闲时执行保存，避免在WriteIntentReadAction中调用runWriteAction
+            ApplicationManager.getApplication().invokeLater {
+                try {
+                    // 获取当前项目并保存
+                    val currentProject = ProjectManager.getInstance().openProjects.firstOrNull()
+                    if (currentProject != null) {
+                        // 保存整个项目状态
+                        currentProject.save()
+                        logger.info("试题数据已触发即时保存")
+                    } else {
+                        logger.warn("未找到打开的项目")
+                    }
+                } catch (e: Exception) {
+                    logger.warn("触发保存机制时发生异常", e)
+                }
             }
         } catch (e: Exception) {
             logger.warn("触发保存机制时发生异常", e)
@@ -420,5 +450,9 @@ class QuestionService : PersistentStateComponent<Element> {
             logger.error("加载试题数据时发生严重错误", e)
             // 发生严重错误时不修改现有数据
         }
+    }
+
+    override fun getModificationCount(): Long {
+        return modificationCount.get()
     }
 }
