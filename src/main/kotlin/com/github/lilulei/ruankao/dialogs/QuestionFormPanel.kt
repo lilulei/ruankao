@@ -683,14 +683,24 @@ class QuestionFormPanel(
         return QuestionFormData(
             title = title,
 
-            examLevel = if (userIdentityService.isIdentitySelected()) {
+            examLevel = if (mode == FormMode.EDIT && existingQuestion != null) {
+                // 编辑模式下使用原有试题的考试级别
+                existingQuestion.examLevel
+            } else if (userIdentityService.isIdentitySelected()) {
+                // 添加模式下使用当前身份的考试级别
                 userIdentityService.getSelectedExamLevel()
             } else {
+                // 默认考试级别
                 ExamLevel.SENIOR
             },
-            examType = if (userIdentityService.isIdentitySelected()) {
+            examType = if (mode == FormMode.EDIT && existingQuestion != null) {
+                // 编辑模式下使用原有试题的考试类型
+                existingQuestion.examType
+            } else if (userIdentityService.isIdentitySelected()) {
+                // 添加模式下使用当前身份的考试类型
                 userIdentityService.getSelectedExamType()
             } else {
+                // 默认考试类型
                 ExamType.PROJECT_MANAGER
             },
             level = difficulty,

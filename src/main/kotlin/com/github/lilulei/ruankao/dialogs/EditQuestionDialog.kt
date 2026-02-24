@@ -65,6 +65,7 @@ class EditQuestionDialog(private val project: Project, private val originalQuest
 
     fun getUpdatedQuestion(): Question? {
         val formData = formPanel.getFormData()
+
         if (formData == null) {
             return null
         }

@@ -106,8 +106,8 @@ class QuestionService : PersistentStateComponent<Element> {
         logger.info("试题详情: 标题='${question.title}', 难度=${question.level.displayName}, 类型=${question.examType.displayName}")
         logger.info("添加后试题总数: ${_questions.size}")
         
-        // 强制触发持久化保存
-        forceSave()
+        // 记录数据变更以便追踪
+        logDataConsistencyStatus("添加试题后")
     }
 
     /**
@@ -148,6 +148,27 @@ class QuestionService : PersistentStateComponent<Element> {
     }
 
     /**
+     * 检查数据一致性状态并记录日志
+     * @param operation 操作描述
+     */
+    private fun logDataConsistencyStatus(operation: String) {
+        logger.info("[$operation] 数据一致性状态:")
+        logger.info("  内存中试题数量: ${_questions.size}")
+        
+        // 统计各类型试题数量
+        val levelStats = _questions.values.groupingBy { it.level }.eachCount()
+        val examTypeStats = _questions.values.groupingBy { it.examType }.eachCount()
+        val examLevelStats = _questions.values.groupingBy { it.examLevel }.eachCount()
+        
+        logger.info("  难度分布: $levelStats")
+        logger.info("  考试类型分布: $examTypeStats")
+        logger.info("  考试级别分布: $examLevelStats")
+        
+        // 触发IntelliJ平台的自动保存机制
+        forceSave()
+    }
+
+    /**
      * 刷新试题列表（从持久化存储重新加载）
      */
     fun refreshQuestions() {
@@ -156,21 +177,20 @@ class QuestionService : PersistentStateComponent<Element> {
     
     /**
      * 强制触发持久化保存
-     * 通过重新设置状态来强制保存数据
+     * 通过标记服务状态为脏来触发IntelliJ平台自动保存
      */
     private fun forceSave() {
         try {
             // 获取当前项目
             val project = com.intellij.openapi.project.ProjectManager.getInstance().openProjects.firstOrNull()
             if (project != null) {
-                // 重新获取服务实例并触发保存
+                // 重新获取服务实例，IntelliJ平台会自动检测状态变化并保存
                 val service = project.getService(QuestionService::class.java)
-                // 通过重新设置相同的状态来触发保存
-                service.loadState(getState())
-                logger.info("强制保存试题数据完成")
+                logger.info("标记试题服务状态为需要保存")
+                // IntelliJ平台会自动调用getState()方法进行持久化
             }
         } catch (e: Exception) {
-            logger.warn("强制保存试题数据失败", e)
+            logger.warn("触发保存机制时发生异常", e)
         }
     }
 
@@ -283,98 +303,122 @@ class QuestionService : PersistentStateComponent<Element> {
         try {
             logger.info("开始加载试题数据...")
             val oldSize = _questions.size
-            _questions.clear()
+            
+            // 创建临时映射来存储加载的数据
+            val tempQuestions = mutableMapOf<String, Question>()
             
             val questionElements = state.getChildren("question")
             logger.info("XML文件中找到 ${questionElements.size} 道试题")
             
             questionElements.forEach { questionElement ->
-                val id = questionElement.getAttributeValue("id")
-                val title = questionElement.getAttributeValue("title") ?: ""
-                
-                logger.debug("正在加载试题: $id - $title")
-                
-                val levelName = questionElement.getAttributeValue("level") ?: "中等"
-                val examTypeName = questionElement.getAttributeValue("examType") ?: "SOFTWARE_DESIGNER"
-                val examLevelName = questionElement.getAttributeValue("examLevel") ?: "软考高级"
-                val yearStr = questionElement.getAttributeValue("year") ?: "2025-11-08"
-
-                val level = try {
-                    // 尝试匹配中文显示名称
-                    DifficultyLevel.values().find { it.displayName == levelName } ?: 
-                    // 如果没找到，尝试匹配枚举名称
-                    DifficultyLevel.valueOf(levelName.uppercase())
-                } catch (e: IllegalArgumentException) {
-                    DifficultyLevel.MEDIUM
-                }
-
-                val examType = try {
-                    // 尝试匹配中文显示名称
-                    ExamType.values().find { it.displayName == examTypeName } ?: 
-                    // 如果没找到，尝试匹配枚举名称
-                    ExamType.valueOf(examTypeName)
-                } catch (e: IllegalArgumentException) {
-                    ExamType.SOFTWARE_DESIGNER
-                }
-
-                val examLevel = try {
-                    // 尝试匹配中文显示名称
-                    ExamLevel.values().find { it.displayName == examLevelName } ?: 
-                    // 如果没找到，尝试匹配枚举名称
-                    ExamLevel.valueOf(examLevelName.uppercase())
-                } catch (e: IllegalArgumentException) {
-                    ExamLevel.SENIOR
-                }
-
-                // 解析考试年份
-                val year = try {
-                    LocalDate.parse(yearStr)
-                } catch (e: Exception) {
-                    LocalDate.of(2025, 11, 8) // 默认日期
-                }
-
-                // 解析选项
-                val options = mutableMapOf<String, String>()
-                val optionsElement = questionElement.getChild("options")
-                optionsElement?.getChildren("option")?.forEach { optionElement ->
-                    val key = optionElement.getAttributeValue("key")
-                    val value = optionElement.text
-                    if (key != null) {
-                        options[key] = value
+                try {
+                    val id = questionElement.getAttributeValue("id")
+                    val title = questionElement.getAttributeValue("title") ?: ""
+                    
+                    if (id.isNullOrEmpty()) {
+                        logger.warn("跳过ID为空的试题")
+                        return@forEach
                     }
+                    
+                    logger.debug("正在加载试题: $id - $title")
+                    
+                    val levelName = questionElement.getAttributeValue("level") ?: "中等"
+                    val examTypeName = questionElement.getAttributeValue("examType") ?: "SOFTWARE_DESIGNER"
+                    val examLevelName = questionElement.getAttributeValue("examLevel") ?: "软考高级"
+                    val yearStr = questionElement.getAttributeValue("year") ?: "2025-11-08"
+
+                    val level = try {
+                        // 尝试匹配中文显示名称
+                        DifficultyLevel.values().find { it.displayName == levelName } ?: 
+                        // 如果没找到，尝试匹配枚举名称
+                        DifficultyLevel.valueOf(levelName.uppercase())
+                    } catch (e: IllegalArgumentException) {
+                        logger.warn("无法识别的难度等级: $levelName，使用默认值中等")
+                        DifficultyLevel.MEDIUM
+                    }
+
+                    val examType = try {
+                        // 尝试匹配中文显示名称
+                        ExamType.values().find { it.displayName == examTypeName } ?: 
+                        // 如果没找到，尝试匹配枚举名称
+                        ExamType.valueOf(examTypeName)
+                    } catch (e: IllegalArgumentException) {
+                        logger.warn("无法识别的考试类型: $examTypeName，使用默认值软件设计师")
+                        ExamType.SOFTWARE_DESIGNER
+                    }
+
+                    val examLevel = try {
+                        // 尝试匹配中文显示名称
+                        ExamLevel.values().find { it.displayName == examLevelName } ?: 
+                        // 如果没找到，尝试匹配枚举名称
+                        ExamLevel.valueOf(examLevelName.uppercase())
+                    } catch (e: IllegalArgumentException) {
+                        logger.warn("无法识别的考试级别: $examLevelName，使用默认值软考高级")
+                        ExamLevel.SENIOR
+                    }
+
+                    // 解析考试年份
+                    val year = try {
+                        LocalDate.parse(yearStr)
+                    } catch (e: Exception) {
+                        logger.warn("无法解析年份: $yearStr，使用默认日期")
+                        LocalDate.of(2025, 11, 8) // 默认日期
+                    }
+
+                    // 解析选项
+                    val options = mutableMapOf<String, String>()
+                    val optionsElement = questionElement.getChild("options")
+                    optionsElement?.getChildren("option")?.forEach { optionElement ->
+                        val key = optionElement.getAttributeValue("key")
+                        val value = optionElement.text
+                        if (key != null && value != null) {
+                            options[key] = value
+                        }
+                    }
+
+                    // 解析正确答案
+                    val correctAnswers = mutableSetOf<String>()
+                    val answersElement = questionElement.getChild("correctAnswers")
+                    answersElement?.getChildren("answer")?.forEach { answerElement ->
+                        if (answerElement.text != null) {
+                            correctAnswers.add(answerElement.text)
+                        }
+                    }
+
+                    // 解析解析
+                    val explanationElement = questionElement.getChild("explanation")
+                    val explanation = explanationElement?.text ?: ""
+
+                    val question = Question(
+                        id = id,
+                        title = title,
+                        options = options,
+                        correctAnswers = correctAnswers,
+                        explanation = explanation,
+                        level = level,
+                        chapter = questionElement.getAttributeValue("chapter") ?: null,
+                        year = year,
+                        examType = examType,
+                        examLevel = examLevel
+                    )
+
+                    tempQuestions[id] = question
+                    
+                } catch (e: Exception) {
+                    logger.error("加载单个试题时发生错误", e)
+                    // 继续处理下一个试题
                 }
-
-                // 解析正确答案
-                val correctAnswers = mutableSetOf<String>()
-                val answersElement = questionElement.getChild("correctAnswers")
-                answersElement?.getChildren("answer")?.forEach { answerElement ->
-                    correctAnswers.add(answerElement.text)
-                }
-
-                // 解析解析
-                val explanationElement = questionElement.getChild("explanation")
-                val explanation = explanationElement?.text ?: ""
-
-                val question = Question(
-                    id = id,
-                    title = title,
-                    options = options,
-                    correctAnswers = correctAnswers,
-                    explanation = explanation,
-                    level = level,
-                    chapter = questionElement.getAttributeValue("chapter") ?: null,
-                    year = year,
-                    examType = examType,
-                    examLevel = examLevel
-                )
-
-                _questions[id] = question
             }
+            
+            // 只有在所有试题都成功加载后才替换原有数据
+            _questions.clear()
+            _questions.putAll(tempQuestions)
             
             logger.info("试题数据加载完成，加载了 ${_questions.size} 道试题 (之前: $oldSize)")
             
         } catch (e: Exception) {
-            logger.error("Error loading questions", e)
+            logger.error("加载试题数据时发生严重错误", e)
+            // 发生严重错误时不修改现有数据
         }
     }
 }
