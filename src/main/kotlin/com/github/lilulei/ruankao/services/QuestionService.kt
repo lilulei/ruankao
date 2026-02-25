@@ -130,7 +130,12 @@ class QuestionService(private val project: Project) : PersistentStateComponent<E
      * 删除试题
      * @param id 要删除的试题ID
      */
-    fun removeQuestion(id: String) {
+    fun removeQuestion(id: String): Boolean {
+        val question = _questions[id]
+        if (question != null && question.questionType == QuestionType.BUILT_IN) {
+            logger.warn("无法删除内置试题: $id")
+            return false
+        }
         val removed = _questions.remove(id)
         if (removed != null) {
             modificationCount.incrementAndGet() // 立即标记为已修改
@@ -143,18 +148,26 @@ class QuestionService(private val project: Project) : PersistentStateComponent<E
             logDataConsistencyStatus("删除试题后")
         } else {
             logger.warn("尝试删除不存在的试题: $id")
+            return false
         }
+        return true
     }
 
     /**
      * 更新试题
      * @param question 更新后的试题对象
      */
-    fun updateQuestion(question: Question) {
+    fun updateQuestion(question: Question): Boolean {
+        val existingQuestion = _questions[question.id]
+        if (existingQuestion != null && existingQuestion.questionType == QuestionType.BUILT_IN) {
+            logger.warn("无法更新内置试题: ${question.id}")
+            return false
+        }
         _questions[question.id] = question
         logger.info("更新试题: ${question.id}")
         logger.info("更新后试题总数: ${_questions.size}")
         forceSave()
+        return true
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.github.lilulei.ruankao.dialogs
 
 import com.github.lilulei.ruankao.model.Question
+import com.github.lilulei.ruankao.model.QuestionType
 import com.github.lilulei.ruankao.services.QuestionService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -46,7 +47,8 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
             options = formData.options,
             correctAnswers = formData.correctAnswers,
             explanation = formData.explanation,
-            year = formData.year
+            year = formData.year,
+            questionType = QuestionType.USER_ADDED
         )
 
         questionService.addQuestion(newQuestion)
@@ -73,7 +75,8 @@ class AddQuestionDialog(private val project: Project) : DialogWrapper(true) {
             options = formData.options,
             correctAnswers = formData.correctAnswers,
             explanation = formData.explanation,
-            year = formData.year
+            year = formData.year,
+            questionType = QuestionType.USER_ADDED
         )
     }
 }

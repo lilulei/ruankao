@@ -14,6 +14,7 @@ import java.time.LocalDate
  * @param year 考试年份，默认为0表示未指定年份
  * @param examType 考试类型，默认为系统架构设计师
  * @param examLevel 考试级别，支持软考高级/中级/初级，默认为软考高级
+ * @param questionType 试题类型，内置试题或用户添加试题
  */
 @Serializable
 data class Question(
@@ -26,7 +27,8 @@ data class Question(
     val chapter: String? = null, // 知识点章节
     val year: LocalDate = LocalDate.of(2025, 11, 8), // 考试年份
     val examType: ExamType = ExamType.SYSTEM_ARCHITECT, // 考试类型
-    val examLevel: ExamLevel = ExamLevel.SENIOR // 考试级别
+    val examLevel: ExamLevel = ExamLevel.SENIOR, // 考试级别
+    val questionType: QuestionType = QuestionType.USER_ADDED // 试题类型
 )
 
 /**
@@ -37,6 +39,15 @@ enum class DifficultyLevel(val displayName: String) {
     EASY("简单"),
     MEDIUM("中等"),
     HARD("困难")
+}
+
+/**
+ * 试题类型枚举
+ */
+@Serializable
+enum class QuestionType(val displayName: String) {
+    BUILT_IN("内置试题"),
+    USER_ADDED("用户添加")
 }
 
 /**

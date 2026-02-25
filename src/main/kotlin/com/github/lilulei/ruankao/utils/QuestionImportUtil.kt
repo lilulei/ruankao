@@ -151,7 +151,8 @@ class QuestionImportUtil {
                         },
                         options = options,
                         correctAnswers = correctAnswers,
-                        explanation = explanation
+                        explanation = explanation,
+                        questionType = com.github.lilulei.ruankao.model.QuestionType.USER_ADDED
                     )
                     
                     // 检查是否已存在相同ID的题目

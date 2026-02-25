@@ -3,6 +3,7 @@ package com.github.lilulei.ruankao.dialogs
 import com.github.lilulei.ruankao.model.ExamLevel
 import com.github.lilulei.ruankao.model.ExamType
 import com.github.lilulei.ruankao.model.Question
+import com.github.lilulei.ruankao.model.QuestionType
 import com.github.lilulei.ruankao.services.QuestionService
 import com.github.lilulei.ruankao.services.UserIdentityService
 import com.intellij.openapi.project.Project
@@ -321,18 +322,39 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         val selectedRow = table.selectedRow
         if (selectedRow >= 0) {
             val question = filteredQuestionList[selectedRow]
+
+            // 检查是否为内置试题
+            if (question.questionType == QuestionType.BUILT_IN) {
+                JOptionPane.showMessageDialog(
+                    this.window,
+                    "内置试题不允许修改",
+                    "提示",
+                    JOptionPane.WARNING_MESSAGE
+                )
+                return
+            }
+
             val dialog = com.github.lilulei.ruankao.dialogs.EditQuestionDialog(project, question)
             if (dialog.showAndGet()) {
                 val updatedQuestion = dialog.getUpdatedQuestion()
                 if (updatedQuestion != null) {
-                    questionService.updateQuestion(updatedQuestion)
-                    refreshQuestionList()
-                    JOptionPane.showMessageDialog(
-                        this.window,
-                        "试题更新成功！",
-                        "成功",
-                        JOptionPane.INFORMATION_MESSAGE
-                    )
+                    val success = questionService.updateQuestion(updatedQuestion)
+                    if (success) {
+                        refreshQuestionList()
+                        JOptionPane.showMessageDialog(
+                            this.window,
+                            "试题更新成功！",
+                            "成功",
+                            JOptionPane.INFORMATION_MESSAGE
+                        )
+                    } else {
+                        JOptionPane.showMessageDialog(
+                            this.window,
+                            "更新试题失败",
+                            "错误",
+                            JOptionPane.ERROR_MESSAGE
+                        )
+                    }
                 }
             }
         } else {
@@ -349,6 +371,18 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
         val selectedRow = table.selectedRow
         if (selectedRow >= 0) {
             val question = filteredQuestionList[selectedRow]
+
+            // 检查是否为内置试题
+            if (question.questionType == QuestionType.BUILT_IN) {
+                JOptionPane.showMessageDialog(
+                    this.window,
+                    "内置试题不允许删除",
+                    "提示",
+                    JOptionPane.WARNING_MESSAGE
+                )
+                return
+            }
+
             val confirm = JOptionPane.showConfirmDialog(
                 this.window,
                 "确定要删除试题 \"${question.title}\" 吗？\n此操作不可撤销！",
@@ -358,14 +392,23 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
             )
 
             if (confirm == JOptionPane.YES_OPTION) {
-                questionService.removeQuestion(question.id)
-                refreshQuestionList()
-                JOptionPane.showMessageDialog(
-                    this.window,
-                    "试题删除成功！",
-                    "成功",
-                    JOptionPane.INFORMATION_MESSAGE
-                )
+                val success = questionService.removeQuestion(question.id)
+                if (success) {
+                    refreshQuestionList()
+                    JOptionPane.showMessageDialog(
+                        this.window,
+                        "试题删除成功！",
+                        "成功",
+                        JOptionPane.INFORMATION_MESSAGE
+                    )
+                } else {
+                    JOptionPane.showMessageDialog(
+                        this.window,
+                        "删除试题失败",
+                        "错误",
+                        JOptionPane.ERROR_MESSAGE
+                    )
+                }
             }
         } else {
             JOptionPane.showMessageDialog(
@@ -388,9 +431,31 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
             return
         }
 
+        // 过滤出非内置试题
+        val questionsToDelete = filteredQuestionList.filter {
+            selectedQuestions.contains(it.id) && it.questionType != QuestionType.BUILT_IN
+        }
+        val builtInCount = selectedQuestions.size - questionsToDelete.size
+
+        if (questionsToDelete.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                this.window,
+                "选中的试题均为内置试题，无法删除",
+                "提示",
+                JOptionPane.WARNING_MESSAGE
+            )
+            return
+        }
+
+        var message = "确定要删除选中的 ${questionsToDelete.size} 道试题吗？"
+        if (builtInCount > 0) {
+            message += "\n（其中 $builtInCount 道内置试题将被跳过）"
+        }
+        message += "\n此操作不可撤销！"
+
         val confirm = JOptionPane.showConfirmDialog(
             this.window,
-            "确定要删除选中的 ${selectedQuestions.size} 道试题吗？\n此操作不可撤销！",
+            message,
             "确认批量删除",
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
@@ -398,15 +463,17 @@ class QuestionManagementDialog(private val project: Project) : DialogWrapper(tru
 
         if (confirm == JOptionPane.YES_OPTION) {
             var deletedCount = 0
-            val questionsToDelete = selectedQuestions.toList() // 创建副本避免并发修改
-            questionsToDelete.forEach { questionId ->
-                questionService.removeQuestion(questionId)
-                deletedCount++
+            val questionIdsToDelete = questionsToDelete.map { it.id }.toList()
+            questionIdsToDelete.forEach { questionId ->
+                val success = questionService.removeQuestion(questionId)
+                if (success) {
+                    deletedCount++
+                }
             }
-            
+
             selectedQuestions.clear()
             refreshQuestionList()
-            
+
             JOptionPane.showMessageDialog(
                 this.window,
                 "成功删除 $deletedCount 道试题！",
