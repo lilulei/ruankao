@@ -1,0 +1,56 @@
+[
+  {
+    "id": "builtin_pm_001",
+    "title": "项目管理中，以下哪项是项目章程的主要作用？",
+    "options": {
+      "A": "详细描述项目的具体工作内容",
+      "B": "正式授权项目经理使用组织资源开展项目活动",
+      "C": "制定详细的项目进度计划",
+      "D": "确定项目团队成员的具体职责"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "项目章程是正式批准项目的文件，主要作用是正式授权项目经理使用组织资源开展项目活动，为项目经理提供 authority 和 resources。",
+    "level": "MEDIUM",
+    "chapter": "项目管理知识域",
+    "year": "2025-11-08",
+    "examType": "PROJECT_MANAGER",
+    "examLevel": "SENIOR",
+    "questionType": "BUILT_IN"
+  },
+  {
+    "id": "builtin_pm_002",
+    "title": "在项目生命周期中，风险最高的阶段通常是？",
+    "options": {
+      "A": "项目启动阶段",
+      "B": "项目规划阶段",
+      "C": "项目执行阶段",
+      "D": "项目收尾阶段"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "项目启动阶段风险最高，因为此时项目的不确定性最大，目标和范围还不够明确，变更成本相对较低但影响较大。",
+    "level": "EASY",
+    "chapter": "项目风险管理知识域",
+    "year": "2025-11-08",
+    "examType": "PROJECT_MANAGER",
+    "examLevel": "SENIOR",
+    "questionType": "BUILT_IN"
+  },
+  {
+    "id": "builtin_pm_003",
+    "title": "以下哪种合同类型对买方风险最小？",
+    "options": {
+      "A": "成本加固定费用合同",
+      "B": "成本加激励费用合同",
+      "C": "总价合同",
+      "D": "工料合同"
+    },
+    "correctAnswers": ["C"],
+    "explanation": "总价合同对买方风险最小，因为合同价格固定，卖方承担了大部分风险，买方只需关注交付成果是否符合要求。",
+    "level": "HARD",
+    "chapter": "项目采购管理知识域",
+    "year": "2025-11-08",
+    "examType": "PROJECT_MANAGER",
+    "examLevel": "SENIOR",
+    "questionType": "BUILT_IN"
+  }
+]

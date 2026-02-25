@@ -1,0 +1,56 @@
+[
+  {
+    "id": "builtin_sd_001",
+    "title": "软件设计师在进行模块设计时，应遵循的最重要原则是？",
+    "options": {
+      "A": "高内聚低耦合",
+      "B": "代码复用最大化",
+      "C": "性能优化优先",
+      "D": "界面美观为主"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "高内聚低耦合是软件设计的基本原则，高内聚指模块内部功能紧密相关，低耦合指模块间依赖关系尽可能少，这样可以提高软件的可维护性和可扩展性。",
+    "level": "MEDIUM",
+    "chapter": "软件设计知识域",
+    "year": "2025-11-08",
+    "examType": "SOFTWARE_DESIGNER",
+    "examLevel": "INTERMEDIATE",
+    "questionType": "BUILT_IN"
+  },
+  {
+    "id": "builtin_sd_002",
+    "title": "在软件测试中，单元测试的主要目的是？",
+    "options": {
+      "A": "验证整个系统的功能",
+      "B": "检验模块间的接口",
+      "C": "验证单个模块的功能正确性",
+      "D": "测试用户界面的友好性"
+    },
+    "correctAnswers": ["C"],
+    "explanation": "单元测试是软件测试的基础层次，主要针对程序中的最小可测试单元（通常是函数或方法）进行测试，验证其功能实现的正确性。",
+    "level": "EASY",
+    "chapter": "软件测试知识域",
+    "year": "2025-11-08",
+    "examType": "SOFTWARE_DESIGNER",
+    "examLevel": "INTERMEDIATE",
+    "questionType": "BUILT_IN"
+  },
+  {
+    "id": "builtin_sd_003",
+    "title": "以下哪种设计模式属于创建型模式？",
+    "options": {
+      "A": "观察者模式",
+      "B": "策略模式",
+      "C": "单例模式",
+      "D": "适配器模式"
+    },
+    "correctAnswers": ["C"],
+    "explanation": "单例模式是创建型设计模式，确保一个类只有一个实例，并提供全局访问点；观察者模式和策略模式属于行为型模式；适配器模式属于结构型模式。",
+    "level": "HARD",
+    "chapter": "设计模式知识域",
+    "year": "2025-11-08",
+    "examType": "SOFTWARE_DESIGNER",
+    "examLevel": "INTERMEDIATE",
+    "questionType": "BUILT_IN"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "builtin_pg_001",
+    "title": "程序员在编写代码时，以下哪种做法最有助于提高代码质量？",
+    "options": {
+      "A": "追求代码行数最少",
+      "B": "添加适当的注释和文档",
+      "C": "使用复杂的算法炫技",
+      "D": "忽略代码规范要求"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "添加适当的注释和文档是提高代码质量的重要做法，有助于他人理解和维护代码，良好的文档也是专业程序员的基本素养。",
+    "level": "EASY",
+    "chapter": "程序员知识域",
+    "year": "2025-11-08",
+    "examType": "PROGRAMMER",
+    "examLevel": "JUNIOR",
+    "questionType": "BUILT_IN"
+  },
+  {
+    "id": "builtin_pg_002",
+    "title": "在程序调试过程中，最有效的调试方法是？",
+    "options": {
+      "A": "凭直觉猜测错误位置",
+      "B": "使用调试器逐步跟踪程序执行",
+      "C": "重新编写整个程序",
+      "D": "增加打印语句输出变量值"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "使用调试器逐步跟踪程序执行是最科学有效的调试方法，可以精确定位错误发生的位置和原因，比盲目猜测或重写代码效率更高。",
+    "level": "MEDIUM",
+    "chapter": "程序调试知识域",
+    "year": "2025-11-08",
+    "examType": "PROGRAMMER",
+    "examLevel": "JUNIOR",
+    "questionType": "BUILT_IN"
+  }
+]

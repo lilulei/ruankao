@@ -1,0 +1,38 @@
+[
+  {
+    "id": "builtin_sa_001",
+    "title": "系统分析师在需求分析阶段最重要的任务是？",
+    "options": {
+      "A": "编写详细的设计文档",
+      "B": "与用户深入沟通，准确理解业务需求",
+      "C": "选择合适的开发工具和技术",
+      "D": "制定项目进度计划"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "系统分析师的核心职责是作为用户和开发团队之间的桥梁，通过深入沟通准确理解和分析用户的真实业务需求，这是整个系统开发成功的基础。",
+    "level": "MEDIUM",
+    "chapter": "系统分析知识域",
+    "year": "2025-11-08",
+    "examType": "SYSTEM_ANALYST",
+    "examLevel": "SENIOR",
+    "questionType": "BUILT_IN"
+  },
+  {
+    "id": "builtin_sa_002",
+    "title": "在面向对象分析中，以下哪个概念用于描述事物的静态特征？",
+    "options": {
+      "A": "类(Class)",
+      "B": "对象(Object)",
+      "C": "属性(Attribute)",
+      "D": "方法(Method)"
+    },
+    "correctAnswers": ["C"],
+    "explanation": "属性用于描述事物的静态特征和状态，如人的姓名、年龄等；类是对具有相同属性和方法的对象的抽象；对象是类的实例；方法描述对象的行为。",
+    "level": "EASY",
+    "chapter": "面向对象分析知识域",
+    "year": "2025-11-08",
+    "examType": "SYSTEM_ANALYST",
+    "examLevel": "SENIOR",
+    "questionType": "BUILT_IN"
+  }
+]

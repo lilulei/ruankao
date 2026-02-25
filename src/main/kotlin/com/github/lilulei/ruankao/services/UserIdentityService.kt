@@ -2,6 +2,8 @@ package com.github.lilulei.ruankao.services
 
 import com.github.lilulei.ruankao.model.ExamLevel
 import com.github.lilulei.ruankao.model.ExamType
+import com.github.lilulei.ruankao.utils.BuiltInQuestionsLoader
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
@@ -34,6 +36,7 @@ class UserIdentityService : PersistentStateComponent<Element> {
     private var hasUserMadeSelection: Boolean = false
     private var defaultChapter: String = "计算机系统基础"  // 新增：默认章节字段
     private val listeners = mutableListOf<UserIdentityChangeListener>()  // 身份变更监听器列表
+    private val builtInQuestionsLoader = BuiltInQuestionsLoader()  // 内置试题加载器
     
     companion object {
         fun getInstance(project: Project): UserIdentityService {
@@ -99,6 +102,9 @@ class UserIdentityService : PersistentStateComponent<Element> {
         logger<UserIdentityService>().info("=== 开始身份变更通知 ===")
         logger<UserIdentityService>().info("新身份: ${selectedExamLevel.displayName} - ${selectedExamType.displayName}")
         logger<UserIdentityService>().info("监听器数量: ${listeners.size}")
+        
+        // 首次切换身份时加载内置试题
+        loadBuiltInQuestionsIfNeeded()
         
         listeners.forEachIndexed { index, listener ->
             try {
@@ -300,5 +306,43 @@ class UserIdentityService : PersistentStateComponent<Element> {
                 ExamType.WEB_DESIGNER
             )
         }
+    }
+    
+    /**
+     * 首次切换身份时加载内置试题
+     */
+    private fun loadBuiltInQuestionsIfNeeded() {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                val project = com.intellij.openapi.project.ProjectManager.getInstance().openProjects.firstOrNull()
+                if (project != null) {
+                    val loadedCount = builtInQuestionsLoader.loadBuiltInQuestions(project, selectedExamType)
+                    if (loadedCount > 0) {
+                        logger<UserIdentityService>().info("成功加载 ${loadedCount} 道内置试题 for ${selectedExamType.displayName}")
+                    }
+                }
+            } catch (e: Exception) {
+                logger<UserIdentityService>().error("加载内置试题时发生错误", e)
+            }
+        }
+    }
+    
+    /**
+     * 手动加载指定考试类型的内置试题（供测试使用）
+     */
+    fun loadBuiltInQuestionsManually(examType: ExamType): Int {
+        val project = com.intellij.openapi.project.ProjectManager.getInstance().openProjects.firstOrNull()
+        return if (project != null) {
+            builtInQuestionsLoader.loadBuiltInQuestions(project, examType)
+        } else {
+            0
+        }
+    }
+    
+    /**
+     * 检查指定考试类型的内置试题是否已加载
+     */
+    fun isBuiltInQuestionsLoaded(examType: ExamType): Boolean {
+        return builtInQuestionsLoader.isLoaded(examType)
     }
 }
