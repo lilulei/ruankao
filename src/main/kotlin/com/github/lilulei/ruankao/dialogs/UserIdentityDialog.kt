@@ -1,157 +1,259 @@
 package com.github.lilulei.ruankao.dialogs
 
 import com.github.lilulei.ruankao.model.ExamType
-import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
-import java.awt.Component
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
-import java.awt.Insets
+import java.awt.*
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.*
+import javax.swing.border.EmptyBorder
 
 /**
  * 用户身份选择对话框
- * 让用户选择软考级别和具体的考试类型
+ * 使用级联下拉框选择考试级别和考试类型
  */
 class UserIdentityDialog : DialogWrapper(true) {
-    private val levelComboBox = ComboBox<String>( arrayOf("软考高级", "软考中级", "软考初级")).apply {
-        selectedItem = "软考高级"
-    }
-    
-    private lateinit var examTypeComboBox: ComboBox<ExamType>
-    
+
+    private lateinit var mainComboBox: JComboBox<String>
+    private lateinit var displayField: JTextField
+
+    // 存储当前选中状态
+    private var currentSelection: ExamType? = null
+    private var selectedExamLevel: String? = null
+
     init {
         title = "选择考试身份"
-        initializeComponents()
         init()
+        // 默认选中软考高级-信息系统项目管理师
+        setDefaultSelection("软考高级", ExamType.PROJECT_MANAGER)
     }
-    
-    private fun initializeComponents() {
-        examTypeComboBox = ComboBox<ExamType>()
-        updateExamTypes("软考高级")
-        examTypeComboBox.selectedItem = ExamType.PROJECT_MANAGER // 默认选择软考高级的第一个
-        examTypeComboBox.renderer = object : ListCellRenderer<ExamType> {
-            override fun getListCellRendererComponent(
-                list: JList<out ExamType>?,
-                value: ExamType?,
-                index: Int,
-                isSelected: Boolean,
-                cellHasFocus: Boolean
-            ): Component {
-                val label = JLabel(value?.displayName ?: "")
-                if (isSelected) {
-                    label.background = UIManager.getColor("ComboBox.selectionBackground")
-                    label.foreground = UIManager.getColor("ComboBox.selectionForeground")
-                } else {
-                    label.background = UIManager.getColor("ComboBox.background")
-                    label.foreground = UIManager.getColor("ComboBox.foreground")
-                }
-                label.border = BorderFactory.createEmptyBorder(2, 5, 2, 5)
-                return label
-            }
-        }
-    }
-    
+
     override fun createCenterPanel(): JComponent {
         val panel = JPanel(GridBagLayout())
         val gbc = GridBagConstraints().apply {
             insets = Insets(5, 5, 5, 5)
         }
 
-        // 级别选择
+        // 当前身份标签
         gbc.gridx = 0
         gbc.gridy = 0
         gbc.anchor = GridBagConstraints.WEST
-        panel.add(JLabel("考试级别:"), gbc)
+        panel.add(JLabel("当前身份:"), gbc)
 
+        // 创建级联下拉框
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
-        panel.add(levelComboBox, gbc)
-
-        // 考试类型选择
-        gbc.gridx = 0
-        gbc.gridy = 1
-        gbc.fill = GridBagConstraints.NONE
-        gbc.weightx = 0.0
-        panel.add(JLabel("考试类型:"), gbc)
-
-        gbc.gridx = 1
-        gbc.fill = GridBagConstraints.NONE
-        panel.add(examTypeComboBox, gbc)
-
-        // 添加事件监听器，实现二级联动
-        levelComboBox.addActionListener {
-            val selectedLevel = levelComboBox.selectedItem as String
-            updateExamTypes(selectedLevel)
-        }
+        panel.add(createCascadeComboBox(), gbc)
 
         return panel
     }
-    
+
     /**
-     * 根据选择的级别更新考试类型下拉框
+     * 创建级联下拉框
      */
-    private fun updateExamTypes(level: String) {
-        val examTypes = when (level) {
-            "软考高级" -> arrayOf(
-                ExamType.PROJECT_MANAGER,        // 信息系统项目管理师
-                ExamType.SYSTEM_ANALYST,         // 系统分析师
-                ExamType.SYSTEM_ARCHITECT,       // 系统架构设计师
-                ExamType.NETWORK_PLANNER,        // 网络规划设计师
-                ExamType.SYSTEM_PLANNING_MANAGER // 系统规划与管理师
-            )
-            "软考中级" -> arrayOf(
-                ExamType.SYSTEM_INTEGRATION_ENGINEER,          // 系统集成项目管理工程师
-                ExamType.NETWORK_ENGINEER,                     // 网络工程师
-                ExamType.INFORMATION_SYSTEM_MANAGEMENT_ENGINEER, // 信息系统管理工程师
-                ExamType.SOFTWARE_TESTER,                      // 软件评测师
-                ExamType.DATABASE_ENGINEER,                    // 数据库系统工程师
-                ExamType.MULTIMEDIA_DESIGNER,                  // 多媒体应用设计师
-                ExamType.SOFTWARE_DESIGNER,                    // 软件设计师
-                ExamType.INFORMATION_SYSTEM_SUPERVISOR,        // 信息系统监理师
-                ExamType.E_COMMERCE_DESIGNER,                  // 电子商务设计师
-                ExamType.INFORMATION_SECURITY_ENGINEER,        // 信息安全工程师
-                ExamType.EMBEDDED_SYSTEM_DESIGNER,             // 嵌入式系统设计师
-                ExamType.SOFTWARE_PROCESS_EVALUATOR,           // 软件过程能力评估师
-                ExamType.COMPUTER_AIDED_DESIGNER,              // 计算机辅助设计师
-                ExamType.COMPUTER_HARDWARE_ENGINEER,           // 计算机硬件工程师
-                ExamType.INFORMATION_TECHNOLOGY_SUPPORT_ENGINEER // 信息技术支持工程师
-            )
-            "软考初级" -> arrayOf(
-                ExamType.PROGRAMMER,                          // 程序员
-                ExamType.NETWORK_ADMINISTRATOR,               // 网络管理员
-                ExamType.INFORMATION_PROCESSING_TECHNICIAN,   // 信息处理技术员
-                ExamType.INFORMATION_SYSTEM_OPERATION_MANAGER, // 信息系统运行管理员
-                ExamType.MULTIMEDIA_APPLICATION_DESIGNER,     // 多媒体应用制作技术员
-                ExamType.E_COMMERCE_TECHNICIAN,               // 电子商务技术员
-                ExamType.WEB_DESIGNER                         // 网页制作员
-            )
-            else -> arrayOf(ExamType.SOFTWARE_DESIGNER) // 默认
+    private fun createCascadeComboBox(): JComponent {
+        // 创建显示文本框
+        displayField = JTextField().apply {
+            isEditable = false
+            text = "软考高级 - 信息系统项目管理师"
         }
-        
-        examTypeComboBox.removeAllItems()
-        examTypes.forEach { examType ->
-            examTypeComboBox.addItem(examType)
+
+        // 创建下拉按钮
+        val dropDownButton = JButton().apply {
+            icon = UIManager.getIcon("ComboBox.buttonArrowIcon")
+            isBorderPainted = false
+            isContentAreaFilled = false
         }
-        
-        // 设置默认选中第一个
-        if (examTypes.isNotEmpty()) {
-            examTypeComboBox.selectedItem = examTypes[0]
+
+        // 组装成组合框样式
+        val comboBoxPanel = JPanel(BorderLayout(5, 0)).apply {
+            border = UIManager.getBorder("ComboBox.border")
+            add(displayField, BorderLayout.CENTER)
+            add(dropDownButton, BorderLayout.EAST)
+        }
+
+        // 点击按钮显示级联弹出面板
+        dropDownButton.addActionListener {
+            showCascadePopup(comboBoxPanel)
+        }
+        displayField.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                showCascadePopup(comboBoxPanel)
+            }
+        })
+
+        return comboBoxPanel
+    }
+
+    /**
+     * 显示级联弹出面板
+     */
+    private fun showCascadePopup(owner: JComponent) {
+        val popup = JPopupMenu()
+        popup.isFocusable = true
+        popup.border = BorderFactory.createLineBorder(Color.GRAY)
+
+        // 创建主面板：左侧级别列表 + 右侧类型列表
+        val mainPanel = JPanel(GridLayout(1, 2, 0, 0))
+
+        // 左侧级别列表
+        val levelList = listOf("软考高级", "软考中级", "软考初级")
+        val levelPanel = JPanel(BorderLayout())
+        levelPanel.border = EmptyBorder(5, 5, 5, 5)
+
+        val levelListModel = DefaultListModel<String>().apply {
+            levelList.forEach { addElement(it) }
+        }
+        val levelJList = JList(levelListModel).apply {
+            selectionMode = ListSelectionModel.SINGLE_SELECTION
+            selectedIndex = levelList.indexOf(selectedExamLevel ?: "软考高级")
+            cellRenderer = DefaultListCellRenderer().apply {
+                horizontalAlignment = SwingConstants.LEFT
+            }
+        }
+        levelPanel.add(JScrollPane(levelJList), BorderLayout.CENTER)
+
+        // 右侧类型列表
+        val typePanel = JPanel(BorderLayout())
+        typePanel.border = EmptyBorder(5, 5, 5, 5)
+
+        val typeListModel = DefaultListModel<ExamType>()
+        val typeJList = JList(typeListModel).apply {
+            selectionMode = ListSelectionModel.SINGLE_SELECTION
+            cellRenderer = object : DefaultListCellRenderer() {
+                override fun getListCellRendererComponent(
+                    list: JList<*>?,
+                    value: Any?,
+                    index: Int,
+                    isSelected: Boolean,
+                    cellHasFocus: Boolean
+                ): Component {
+                    val label = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+                    if (value is ExamType) {
+                        text = value.displayName
+                    }
+                    return label
+                }
+            }
+        }
+        typePanel.add(JScrollPane(typeJList), BorderLayout.CENTER)
+
+        // 组装左右面板
+        mainPanel.add(levelPanel)
+        mainPanel.add(typePanel)
+        mainPanel.preferredSize = Dimension(450, 250)
+
+        popup.add(mainPanel)
+        popup.show(owner, 0, owner.height)
+
+        // 更新右侧类型列表
+        fun updateTypeList(level: String) {
+            typeListModel.clear()
+            val examTypes = getExamTypesByLevel(level)
+            examTypes.forEach { typeListModel.addElement(it) }
+
+            // 如果当前有选中类型，选中它；否则选第一个
+            val currentType = currentSelection
+            if (currentType != null && currentType in examTypes) {
+                typeJList.setSelectedValue(currentType, true)
+            } else if (examTypes.isNotEmpty()) {
+                typeJList.selectedIndex = 0
+            }
+        }
+
+        // 初始显示
+        updateTypeList(levelJList.selectedValue)
+
+        // 左侧级别选择监听 - 联动右侧类型
+        levelJList.addListSelectionListener { e ->
+            if (!e.valueIsAdjusting) {
+                val selectedLevel = levelJList.selectedValue
+                if (selectedLevel != null) {
+                    updateTypeList(selectedLevel)
+                }
+            }
+        }
+
+        // 右侧类型选择监听 - 选中后更新显示并关闭
+        typeJList.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                if (e.clickCount == 1) {
+                    val selectedType = typeJList.selectedValue
+                    val selectedLevel = levelJList.selectedValue
+                    if (selectedType != null && selectedLevel != null) {
+                        currentSelection = selectedType
+                        selectedExamLevel = selectedLevel
+                        displayField.text = "$selectedLevel - ${selectedType.displayName}"
+                        popup.isVisible = false
+                    }
+                }
+            }
+        })
+    }
+
+    /**
+     * 根据级别获取对应的考试类型列表
+     */
+    private fun getExamTypesByLevel(level: String): List<ExamType> {
+        return when (level) {
+            "软考高级" -> listOf(
+                ExamType.PROJECT_MANAGER,
+                ExamType.SYSTEM_ANALYST,
+                ExamType.SYSTEM_ARCHITECT,
+                ExamType.NETWORK_PLANNER,
+                ExamType.SYSTEM_PLANNING_MANAGER
+            )
+            "软考中级" -> listOf(
+                ExamType.SYSTEM_INTEGRATION_ENGINEER,
+                ExamType.NETWORK_ENGINEER,
+                ExamType.INFORMATION_SYSTEM_MANAGEMENT_ENGINEER,
+                ExamType.SOFTWARE_TESTER,
+                ExamType.DATABASE_ENGINEER,
+                ExamType.MULTIMEDIA_DESIGNER,
+                ExamType.SOFTWARE_DESIGNER,
+                ExamType.INFORMATION_SYSTEM_SUPERVISOR,
+                ExamType.E_COMMERCE_DESIGNER,
+                ExamType.INFORMATION_SECURITY_ENGINEER,
+                ExamType.EMBEDDED_SYSTEM_DESIGNER,
+                ExamType.SOFTWARE_PROCESS_EVALUATOR,
+                ExamType.COMPUTER_AIDED_DESIGNER,
+                ExamType.COMPUTER_HARDWARE_ENGINEER,
+                ExamType.INFORMATION_TECHNOLOGY_SUPPORT_ENGINEER
+            )
+            "软考初级" -> listOf(
+                ExamType.PROGRAMMER,
+                ExamType.NETWORK_ADMINISTRATOR,
+                ExamType.INFORMATION_PROCESSING_TECHNICIAN,
+                ExamType.INFORMATION_SYSTEM_OPERATION_MANAGER,
+                ExamType.MULTIMEDIA_APPLICATION_DESIGNER,
+                ExamType.E_COMMERCE_TECHNICIAN,
+                ExamType.WEB_DESIGNER
+            )
+            else -> emptyList()
         }
     }
-    
+
+    /**
+     * 设置默认选中
+     */
+    private fun setDefaultSelection(level: String, examType: ExamType) {
+        currentSelection = examType
+        selectedExamLevel = level
+        displayField.text = "$level - ${examType.displayName}"
+    }
+
     /**
      * 获取用户选择的考试类型
      */
     fun getSelectedExamType(): ExamType? {
-        return examTypeComboBox.selectedItem as? ExamType
+        return currentSelection
     }
-    
+
     /**
      * 获取用户选择的级别
      */
-    fun getSelectedExamLevel(): String {
-        return levelComboBox.selectedItem as String
+    fun getSelectedExamLevel(): String? {
+        return selectedExamLevel
     }
 }
