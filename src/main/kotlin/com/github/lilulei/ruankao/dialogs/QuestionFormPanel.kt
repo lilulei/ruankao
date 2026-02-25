@@ -49,17 +49,9 @@ class QuestionFormPanel(
     private lateinit var identityDisplayField: JTextField
     private lateinit var identityDropDownButton: JButton
     
-    // 存储当前选中的身份信息
-    private var currentExamType: ExamType = if (userIdentityService.isIdentitySelected()) {
-        userIdentityService.getSelectedExamType()
-    } else {
-        ExamType.PROJECT_MANAGER
-    }
-    private var currentExamLevel: String = if (userIdentityService.isIdentitySelected()) {
-        userIdentityService.getSelectedExamLevel().displayName
-    } else {
-        "软考高级"
-    }
+    // 存储当前选中的身份信息 - 始终从全局服务获取
+    private var currentExamType: ExamType = userIdentityService.getSelectedExamType()
+    private var currentExamLevel: String = userIdentityService.getSelectedExamLevel().displayName
     
     // 身份选择面板
     private val identityPanel = JPanel(BorderLayout(5, 0)).apply {
