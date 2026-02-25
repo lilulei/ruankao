@@ -49,7 +49,7 @@ class QuestionFormPanel(
     private lateinit var identityDisplayField: JTextField
     private lateinit var identityDropDownButton: JButton
     
-    // 存储当前选中的身份信息 - 始终从全局服务获取
+    // 存储当前选中的身份信息 - 表单内独立的身份状态
     private var currentExamType: ExamType = userIdentityService.getSelectedExamType()
     private var currentExamLevel: String = userIdentityService.getSelectedExamLevel().displayName
     
@@ -166,7 +166,7 @@ class QuestionFormPanel(
     }
     
     /**
-     * 显示身份选择对话框
+     * 显示身份选择对话框 - 仅更新表单内身份，不影响全局身份
      */
     private fun showIdentitySelectionDialog() {
         val dialog = UserIdentityDialog()
@@ -178,7 +178,6 @@ class QuestionFormPanel(
                 currentExamType = selectedExamType
                 currentExamLevel = selectedLevel
                 updateIdentityDisplay()
-                userIdentityService.setSelectedExamType(selectedExamType)
                 updateChapterComboBox()
             }
         }
