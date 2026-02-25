@@ -8,7 +8,6 @@ import com.github.lilulei.ruankao.services.KnowledgeChapterService
 import com.github.lilulei.ruankao.services.UserIdentityService
 import com.intellij.openapi.project.Project
 import java.awt.*
-import java.awt.event.ItemEvent
 import java.time.LocalDate
 import javax.swing.*
 import javax.swing.DefaultComboBoxModel
@@ -45,101 +44,28 @@ class QuestionFormPanel(
             }
         })
     }
+
+    // 当前身份显示组件
+    private lateinit var identityDisplayField: JTextField
+    private lateinit var identityDropDownButton: JButton
     
-    val levelLabel = JLabel().apply {
-        text = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedExamLevel().displayName
-        } else {
-            "软考高级"
-        }
-        toolTipText = "当前考试级别"
+    // 存储当前选中的身份信息
+    private var currentExamType: ExamType = if (userIdentityService.isIdentitySelected()) {
+        userIdentityService.getSelectedExamType()
+    } else {
+        ExamType.PROJECT_MANAGER
     }
-
-    // 考试级别下拉框
-    val examLevelComboBox = JComboBox(ExamLevel.values()).apply {
-        renderer = object : ListCellRenderer<Any> {
-            private val defaultRenderer = DefaultListCellRenderer()
-            override fun getListCellRendererComponent(
-                list: JList<out Any>,
-                value: Any,
-                index: Int,
-                isSelected: Boolean,
-                cellHasFocus: Boolean
-            ): Component {
-                return defaultRenderer.getListCellRendererComponent(list, (value as? ExamLevel)?.displayName, index, isSelected, cellHasFocus)
-            }
-        }
-        // 默认选中当前身份
-        selectedItem = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedExamLevel()
-        } else {
-            ExamLevel.SENIOR
-        }
-        toolTipText = "选择考试级别"
-    }
-
-    // 考试类型下拉框（根据级别动态变化）
-    val examTypeComboBox = JComboBox<ExamType>().apply {
-        renderer = object : ListCellRenderer<Any> {
-            private val defaultRenderer = DefaultListCellRenderer()
-            override fun getListCellRendererComponent(
-                list: JList<out Any>,
-                value: Any,
-                index: Int,
-                isSelected: Boolean,
-                cellHasFocus: Boolean
-            ): Component {
-                return defaultRenderer.getListCellRendererComponent(list, (value as? ExamType)?.displayName, index, isSelected, cellHasFocus)
-            }
-        }
-        // 默认选中当前身份
-        selectedItem = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedExamType()
-        } else {
-            ExamType.PROJECT_MANAGER
-        }
-        toolTipText = "选择考试类型"
-    }
-
-    // 在init块中添加监听器
-    init {
-        // 监听考试级别变化，动态更新考试类型选项
-        examLevelComboBox.addItemListener(object : java.awt.event.ItemListener {
-            override fun itemStateChanged(e: java.awt.event.ItemEvent) {
-                if (e.stateChange == ItemEvent.SELECTED) {
-                    val selectedLevel = examLevelComboBox.selectedItem as ExamLevel
-                    val examTypes = userIdentityService.getExamTypesForLevel(selectedLevel)
-                    examTypeComboBox.model = DefaultComboBoxModel(examTypes.toTypedArray())
-                    // 如果当前选中的考试类型不在新列表中，则选中第一个
-                    examTypeComboBox.selectedIndex = 0
-                }
-            }
-        })
-    }
-
-    // 初始化考试类型下拉框
-    private fun initExamTypeComboBox() {
-        val currentLevel = examLevelComboBox.selectedItem as? ExamLevel ?: ExamLevel.SENIOR
-        val examTypes = userIdentityService.getExamTypesForLevel(currentLevel)
-        examTypeComboBox.model = DefaultComboBoxModel(examTypes.toTypedArray())
-        // 设置默认选中当前身份
-        if (userIdentityService.isIdentitySelected()) {
-            val currentExamType = userIdentityService.getSelectedExamType()
-            if (examTypes.contains(currentExamType)) {
-                examTypeComboBox.selectedItem = currentExamType
-            }
-        }
-    }
-
-    val examTypeLabel = JLabel().apply {
-        text = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedExamType().displayName
-        } else {
-            ExamType.PROJECT_MANAGER.displayName
-        }
-        toolTipText = "当前考试类型"
+    private var currentExamLevel: String = if (userIdentityService.isIdentitySelected()) {
+        userIdentityService.getSelectedExamLevel().displayName
+    } else {
+        "软考高级"
     }
     
+    // 身份选择面板
+    private val identityPanel = JPanel(BorderLayout(5, 0)).apply {
+        border = BorderFactory.createTitledBorder("当前身份")
+    }
+
     val chapterComboBox = JComboBox<String>(emptyArray()).apply {
         renderer = createListCellRenderer()
         toolTipText = "请选择当前身份维护的知识点章节"
@@ -194,78 +120,116 @@ class QuestionFormPanel(
     }
     
     private fun initializeComponents() {
-        initExamTypeComboBox()
+        setupIdentityPanel()
         updateChapterComboBox()
+        // 添加身份变更监听器
+        userIdentityService.addIdentityChangeListener(object : com.github.lilulei.ruankao.services.UserIdentityChangeListener {
+            override fun onIdentityChanged(newLevel: com.github.lilulei.ruankao.model.ExamLevel, newExamType: com.github.lilulei.ruankao.model.ExamType) {
+                currentExamLevel = newLevel.displayName
+                currentExamType = newExamType
+                updateIdentityDisplay()
+                updateChapterComboBox()
+            }
+        })
     }
     
     /**
-     * 获取当前考试级别的显示名称
+     * 设置身份选择面板
      */
-    private fun getCurrentLevelDisplayName(): String {
-        return if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedExamLevel().displayName
-        } else {
-            "软考高级"
+    private fun setupIdentityPanel() {
+        // 创建显示文本框
+        identityDisplayField = JTextField().apply {
+            isEditable = false
+            text = "$currentExamLevel - ${currentExamType.displayName}"
+            toolTipText = "点击选择考试身份"
+        }
+        
+        // 创建下拉按钮
+        identityDropDownButton = JButton().apply {
+            icon = UIManager.getIcon("ComboBox.buttonArrowIcon")
+            isBorderPainted = false
+            isContentAreaFilled = false
+            toolTipText = "点击选择考试身份"
+        }
+        
+        // 组装面板
+        identityPanel.apply {
+            border = BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.GRAY), 
+                "当前身份", 
+                0, 0, Font(null, Font.BOLD, 12)
+            )
+            add(identityDisplayField, BorderLayout.CENTER)
+            add(identityDropDownButton, BorderLayout.EAST)
+        }
+        
+        // 添加点击事件
+        val clickListener = object : java.awt.event.MouseAdapter() {
+            override fun mouseClicked(e: java.awt.event.MouseEvent) {
+                showIdentitySelectionDialog()
+            }
+        }
+        identityDisplayField.addMouseListener(clickListener)
+        identityDropDownButton.addActionListener { showIdentitySelectionDialog() }
+    }
+    
+    /**
+     * 显示身份选择对话框
+     */
+    private fun showIdentitySelectionDialog() {
+        val dialog = UserIdentityDialog()
+        if (dialog.showAndGet()) {
+            val selectedExamType = dialog.getSelectedExamType()
+            val selectedLevel = dialog.getSelectedExamLevel()
+            
+            if (selectedExamType != null && selectedLevel != null) {
+                currentExamType = selectedExamType
+                currentExamLevel = selectedLevel
+                updateIdentityDisplay()
+                userIdentityService.setSelectedExamType(selectedExamType)
+                updateChapterComboBox()
+            }
         }
     }
     
     /**
-     * 获取当前考试类型的显示名称
+     * 更新身份显示
      */
-    private fun getCurrentExamTypeDisplayName(): String {
-        return if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedExamType().displayName
-        } else {
-            ExamType.PROJECT_MANAGER.displayName
-        }
+    private fun updateIdentityDisplay() {
+        identityDisplayField.text = "$currentExamLevel - ${currentExamType.displayName}"
     }
     
     /**
-     * 更新考试级别和考试类型标签显示
+     * 更新章节下拉框，根据当前身份获取对应的章节
      */
-    private fun updateLevelAndExamTypeLabels() {
-        levelLabel.text = getCurrentLevelDisplayName()
-        examTypeLabel.text = getCurrentExamTypeDisplayName()
-    }
-    
     private fun updateChapterComboBox() {
-        val currentLevel = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedExamLevel().displayName
-        } else {
-            "软考高级"
-        }
-        val currentExamType = if (userIdentityService.isIdentitySelected()) {
-            userIdentityService.getSelectedExamType().displayName
-        } else {
-            "信息系统项目管理师"
-        }
-        
         val chapterService = project.getService(KnowledgeChapterService::class.java)
-        val chapters = chapterService.getChapterNamesByIdentity(currentLevel, currentExamType).sorted()
+        val chapters = chapterService.getChapterNamesByIdentity(currentExamLevel, currentExamType.displayName).sorted()
         
+        // 始终启用章节下拉框，让用户可以看到状态
+        chapterComboBox.isEnabled = true
         chapterComboBox.model = DefaultComboBoxModel(chapters.toTypedArray())
         
         if (chapters.isNotEmpty()) {
             chapterComboBox.selectedItem = chapters.first()
         } else {
             chapterComboBox.model = DefaultComboBoxModel(arrayOf("请先添加章节..."))
-            chapterComboBox.isEnabled = false
         }
         
-        chapterComboBox.toolTipText = if (userIdentityService.isIdentitySelected()) {
-            "当前身份维护的章节（共${chapters.size}个）"
-        } else {
-            "请先选择考试身份以查看可用章节"
-        }
+        chapterComboBox.toolTipText = "当前身份维护的章节（共${chapters.size}个）"
     }
     
+    /**
+     * 填充表单数据（编辑模式）
+     */
     private fun populateFormData(question: Question) {
         titleField.text = question.title
-        // 设置考试级别下拉框
-        examLevelComboBox.selectedItem = question.examLevel
-        // 设置考试类型下拉框
-        initExamTypeComboBox()
-        examTypeComboBox.selectedItem = question.examType
+        
+        // 设置当前身份为题目对应的身份
+        currentExamLevel = question.examLevel.displayName
+        currentExamType = question.examType
+        updateIdentityDisplay()
+        updateChapterComboBox()
         
         // 设置章节
         var chapterIndex: Int? = null
@@ -301,48 +265,21 @@ class QuestionFormPanel(
         // 统一标签宽度
         val labelWidth = 65
         
-        // 考试级别
+        // 当前身份
         gbc.gridx = 0
         gbc.gridy = 0
-        gbc.fill = GridBagConstraints.NONE
-        gbc.weightx = 0.0
-        gbc.anchor = GridBagConstraints.WEST
-        val examLevelPanel = JLabel("考试级别").apply {
-            foreground = Color.WHITE
-            text = "考试级别*"
-            // 单独给星号设置红色
-            val styledText = "<html>考试级别<span style='color:red;'>*</span></html>"
-            text = styledText
-        }
-        panel.add(examLevelPanel, gbc)
-
-        gbc.gridx = 1
+        gbc.gridwidth = 2
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
-        panel.add(examLevelComboBox, gbc)
-
-        // 考试类型
-        gbc.gridx = 0
+        panel.add(identityPanel, gbc)
+        
+        // 重置gridwidth和gridy用于后续组件
+        gbc.gridwidth = 1
         gbc.gridy = 1
-        gbc.fill = GridBagConstraints.NONE
-        gbc.anchor = GridBagConstraints.WEST
-        val typePanel = JLabel("考试类型").apply {
-            foreground = Color.WHITE
-            text = "考试类型*"
-            // 单独给星号设置红色
-            val styledText = "<html>考试类型<span style='color:red;'>*</span></html>"
-            text = styledText
-        }
-        panel.add(typePanel, gbc)
-
-        gbc.gridx = 1
-        gbc.fill = GridBagConstraints.HORIZONTAL
-        gbc.weightx = 1.0
-        panel.add(examTypeComboBox, gbc)
 
         // 题目标题
         gbc.gridx = 0
-        gbc.gridy = 2
+        gbc.gridy = 1
         gbc.anchor = GridBagConstraints.WEST
         val titlePanel = JLabel("题目标题").apply {
             foreground = Color.WHITE
@@ -360,15 +297,12 @@ class QuestionFormPanel(
 
         // 章节
         gbc.gridx = 0
-        gbc.gridy = 3
+        gbc.gridy = 2
         gbc.fill = GridBagConstraints.NONE
         gbc.anchor = GridBagConstraints.WEST
         val chapterPanel = JLabel("知识点章节").apply {
             foreground = Color.WHITE
-            text = "知识点章节*"
-            // 单独给星号设置红色
-            val styledText = "<html>知识点章节<span style='color:red;'>*</span></html>"
-            text = styledText
+            text = "知识点章节"
         }
         panel.add(chapterPanel, gbc)
 
@@ -379,7 +313,7 @@ class QuestionFormPanel(
 
         // 难度等级
         gbc.gridx = 0
-        gbc.gridy = 4
+        gbc.gridy = 3
         gbc.fill = GridBagConstraints.NONE
         gbc.anchor = GridBagConstraints.WEST
         val difficultyPanel = JLabel("难度").apply {
@@ -398,7 +332,7 @@ class QuestionFormPanel(
 
         // 日期选择
         gbc.gridx = 0
-        gbc.gridy = 5
+        gbc.gridy = 4
         gbc.fill = GridBagConstraints.NONE
         gbc.anchor = GridBagConstraints.WEST
         val datePanel = JLabel("考试日期").apply {
@@ -417,7 +351,7 @@ class QuestionFormPanel(
 
         // 选项输入区域
         gbc.gridx = 0
-        gbc.gridy = 6
+        gbc.gridy = 5
         gbc.gridwidth = 2
         gbc.fill = GridBagConstraints.BOTH
         gbc.weighty = 0.3
@@ -425,7 +359,7 @@ class QuestionFormPanel(
 
         // 解析输入区域
         gbc.gridx = 0
-        gbc.gridy = 7
+        gbc.gridy = 6
         gbc.gridwidth = 1
         gbc.fill = GridBagConstraints.NONE
         gbc.weighty = 0.0
@@ -733,10 +667,6 @@ class QuestionFormPanel(
             return null
         }
         
-        if (chapter.isEmpty()) {
-            return null
-        }
-        
         // 获取日期
         val dateValue = dateSpinner.value as? java.util.Date
         val localDate = if (dateValue != null) {
@@ -752,12 +682,18 @@ class QuestionFormPanel(
             else -> DifficultyLevel.MEDIUM
         }
         
+        // 根据当前身份获取ExamLevel枚举
+        val examLevel = when (currentExamLevel) {
+            "软考高级" -> ExamLevel.SENIOR
+            "软考中级" -> ExamLevel.INTERMEDIATE
+            "软考初级" -> ExamLevel.JUNIOR
+            else -> ExamLevel.SENIOR
+        }
+        
         return QuestionFormData(
             title = title,
-
-            // 无论添加还是编辑模式，都使用下拉框选中的值
-            examLevel = examLevelComboBox.selectedItem as? ExamLevel ?: ExamLevel.SENIOR,
-            examType = examTypeComboBox.selectedItem as? ExamType ?: ExamType.PROJECT_MANAGER,
+            examLevel = examLevel,
+            examType = currentExamType,
             level = difficulty,
             chapter = chapter,
             options = options,
@@ -767,14 +703,18 @@ class QuestionFormPanel(
         )
     }
     
+    /**
+     * 设置为查看模式，禁用所有可编辑组件
+     */
     fun setViewMode() {
         titleField.isEditable = false
         chapterComboBox.isEnabled = false
         levelComboBox.isEnabled = false
         explanationArea.isEditable = false
         dateSpinner.isEnabled = false
-        examLevelComboBox.isEnabled = false
-        examTypeComboBox.isEnabled = false
+        identityPanel.isEnabled = false
+        identityDisplayField.isEditable = false
+        identityDropDownButton.isEnabled = false
 
         optionsMap.keys.forEach { it.isEditable = false }
         optionsMap.values.forEach { it.isEditable = false }
