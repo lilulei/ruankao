@@ -23,8 +23,7 @@ class EditQuestionDialog(private val project: Project, private val originalQuest
     private fun populateQuestionData() {
         // 填充表单数据
         formPanel.titleField.text = originalQuestion.title
-        // category字段已移除
-        formPanel.examTypeLabel.text = originalQuestion.examType.displayName
+        // 考试级别和考试类型现在通过QuestionFormPanel的populateFormData方法自动填充
         formPanel.levelComboBox.selectedItem = originalQuestion.level.displayName
         formPanel.explanationArea.text = originalQuestion.explanation
 
@@ -73,6 +72,7 @@ class EditQuestionDialog(private val project: Project, private val originalQuest
         return originalQuestion.copy(
             title = formData.title,
             examType = formData.examType,
+            examLevel = formData.examLevel,
             level = formData.level,
             chapter = formData.chapter,
             options = formData.options,
